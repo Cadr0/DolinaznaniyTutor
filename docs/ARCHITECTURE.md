@@ -4,8 +4,8 @@
 
 | Слой | Технология |
 |------|------------|
-| UI + API | Next.js 15 App Router, TypeScript |
-| Стили | Tailwind CSS 4 |
+| i18n | next-intl (ru, en) |
+| UI | Tailwind 4, mobile-first — см. docs/DESIGN.md |
 | БД | PostgreSQL 16 |
 | ORM | Prisma |
 | Auth | Better Auth (этап 2) |
@@ -24,12 +24,12 @@
 ├── CONNECTION.local.md    ← секреты (gitignore)
 │
 ├── src/
-│   ├── app/               ← страницы и API
-│   │   ├── page.tsx       ← landing
-│   │   ├── layout.tsx
-│   │   ├── globals.css
-│   │   └── api/           ← REST endpoints
-│   └── lib/               ← prisma, auth, helpers
+│   ├── app/[locale]/      ← страницы (i18n)
+│   ├── app/api/           ← REST
+│   ├── components/        ← UI
+│   ├── i18n/              ← next-intl
+│   └── lib/
+├── messages/              ← ru.json, en.json
 │
 ├── prisma/
 │   └── schema.prisma      ← модель данных

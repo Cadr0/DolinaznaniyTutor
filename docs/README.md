@@ -7,6 +7,7 @@
 | [PRODUCT.md](PRODUCT.md) | Что строим, сущности, пользователи |
 | [ROADMAP.md](ROADMAP.md) | Текущий этап и ближайшие задачи |
 | [ARCHITECTURE.md](ARCHITECTURE.md) | Стек, папки, модель данных |
+| [DESIGN.md](DESIGN.md) | UI, mobile, i18n, UX-принципы |
 | [DEV.md](DEV.md) | Локальная разработка |
 | [OPS.md](OPS.md) | Деплой, откат, БД, мониторинг |
 | [DOMAIN.md](DOMAIN.md) | Домен diary-ai.ru, HTTPS, SMTP |

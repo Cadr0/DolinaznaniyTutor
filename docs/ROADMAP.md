@@ -1,41 +1,42 @@
 # Roadmap
 
-> Обновляй этот файл при смене этапа. AI должен сверяться здесь перед большими задачами.
+> Обновляй при смене этапа. AI сверяется здесь перед большими задачами.
 
 ## Этап 1 — Основа ✅
 
-- [x] Next.js + PostgreSQL + Docker
-- [x] CI/CD (GitHub Actions → VDS)
+- [x] Next.js + PostgreSQL + Docker + CI/CD
 - [x] Landing, `/api/health`, `/api/version`
-- [x] Prisma-схема (User, Room, Assignment, Marketplace…)
-- [x] Ops: бэкапы, откат, Adminer
+- [x] Prisma-схема, ops, домен diary-ai.ru (ожидает DNS)
+
+## Этап 1.5 — UI и i18n ✅
+
+- [x] next-intl: ru + en
+- [x] Mobile-first landing (Header, Hero, Features, CTA)
+- [x] Design tokens, touch targets, safe-area
+- [x] docs/DESIGN.md
 
 ## Этап 2 — Auth (текущий)
 
-- [ ] Better Auth: регистрация / вход
+- [ ] Better Auth + SMTP (smtp.bz)
 - [ ] Роли TUTOR | STUDENT
-- [ ] Профиль репетитора и ученика
-- [ ] Защита маршрутов по роли
+- [ ] Профили, защита маршрутов
+- [ ] Формы входа — mobile-friendly
 
 ## Этап 3 — Комнаты
 
-- [ ] CRUD комнат (репетитор)
-- [ ] Приглашение ученика (ссылка / код)
-- [ ] Список учеников в комнате
+- [ ] CRUD комнат, приглашения, список учеников
 
 ## Этап 4 — Задания
 
-- [ ] CRUD заданий в комнате
-- [ ] Ответ ученика (Submission)
-- [ ] Проверка и feedback репетитором
+- [ ] CRUD, Submission, feedback репетитора
 
 ## Этап 5 — Маркетплейс
 
-- [ ] Публикация задания в каталог
-- [ ] Поиск / фильтры
-- [ ] Копирование в комнату
+- [ ] Каталог, поиск, копирование в комнату
 
 ## Этап 6 — Прод
 
-- [ ] Домен dolinaznaniy.ru + HTTPS
-- [ ] Мониторинг, алерты
+- [x] Домен diary-ai.ru (временный)
+- [ ] HTTPS после DNS
+- [ ] Мониторинг
+- [ ] Переход на dolinaznaniy.ru (позже)

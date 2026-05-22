@@ -1,0 +1,54 @@
+{
+  "meta": {
+    "title": "Valley of Knowledge — tutoring platform",
+    "description": "Rooms for students, assignments, homework review, and a materials marketplace"
+  },
+  "nav": {
+    "brand": "Valley of Knowledge",
+    "features": "Features",
+    "forTutors": "For tutors",
+    "login": "Log in",
+    "start": "Get started"
+  },
+  "hero": {
+    "badge": "Tutoring platform",
+    "title": "Teach smarter.",
+    "titleAccent": "Grow faster.",
+    "subtitle": "Student rooms, assignments, homework review, and a materials marketplace — all in one place. Mobile-friendly.",
+    "ctaPrimary": "Start for free",
+    "ctaSecondary": "How it works",
+    "trustFree": "Free to start",
+    "trustMobile": "Works on mobile",
+    "trustSecure": "Your data is safe"
+  },
+  "features": {
+    "title": "Everything tutors and students need",
+    "subtitle": "Less admin — more time for learning",
+    "tutor": {
+      "title": "Tutor",
+      "desc": "Create rooms, invite students, assign and review work."
+    },
+    "student": {
+      "title": "Student",
+      "desc": "Personal dashboard, tasks, progress, and feedback — clear from the first screen."
+    },
+    "marketplace": {
+      "title": "Marketplace",
+      "desc": "Use ready-made tasks or publish your own — save prep time."
+    }
+  },
+  "cta": {
+    "title": "Ready to try?",
+    "subtitle": "Registration opens soon. Stay tuned for updates.",
+    "button": "Get launch updates"
+  },
+  "footer": {
+    "tagline": "Valley of Knowledge — tutoring platform",
+    "health": "Status",
+    "version": "Version"
+  },
+  "lang": {
+    "ru": "Рус",
+    "en": "Eng"
+  }
+}

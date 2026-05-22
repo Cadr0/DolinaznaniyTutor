@@ -1,15 +1,10 @@
----
-description: Next.js App Router conventions
-globs: src/**/*
-alwaysApply: false
----
-
 # Next.js
 
-- Routes: `src/app/<path>/page.tsx`
-- API: `src/app/api/<name>/route.ts` — export GET/POST handlers
-- Shared code: `src/lib/` — import as `@/lib/...`
-- Default: Server Components. Add `"use client"` only for hooks/events/browser APIs
-- Styles: Tailwind in component, globals in `src/app/globals.css`
-- Metadata: `layout.tsx` or per-page `export const metadata`
-- No Pages Router (`pages/`, getServerSideProps)
+- Pages: `src/app/[locale]/<path>/page.tsx` — всегда с locale
+- API: `src/app/api/` — без locale prefix
+- i18n: `next-intl` — тексты в `messages/ru.json` + `messages/en.json`
+- Links: `import { Link } from '@/i18n/navigation'` (не next/link для страниц)
+- Shared: `src/lib/` — `@/lib/...`
+- Server Components по умолчанию; `"use client"` для интерактива
+- Стили: Tailwind + tokens в `globals.css`
+- Дизайн: см. `docs/DESIGN.md`

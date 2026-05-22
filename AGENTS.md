@@ -75,11 +75,12 @@ git push origin main            # → GitHub Actions → VDS (~3–5 мин)
 1. [docs/PRODUCT.md](docs/PRODUCT.md) — продукт и сущности
 2. [docs/ROADMAP.md](docs/ROADMAP.md) — **текущие задачи**
 3. [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) — стек и папки
-4. [docs/DEV.md](docs/DEV.md) — локальная разработка
-5. [docs/OPS.md](docs/OPS.md) — деплой, откат, бэкапы
-6. [docs/CONNECTION.md](docs/CONNECTION.md) — доступы без секретов
-7. [docs/GITHUB_SETUP.md](docs/GITHUB_SETUP.md) — CI/CD secrets
-8. [docs/DOMAIN.md](docs/DOMAIN.md) — домен diary-ai.ru + SMTP
+4. [docs/DESIGN.md](docs/DESIGN.md) — UI, mobile, i18n
+5. [docs/DEV.md](docs/DEV.md) — локальная разработка
+6. [docs/OPS.md](docs/OPS.md) — деплой, откат, бэкапы
+7. [docs/CONNECTION.md](docs/CONNECTION.md) — доступы без секретов
+8. [docs/GITHUB_SETUP.md](docs/GITHUB_SETUP.md) — CI/CD secrets
+9. [docs/DOMAIN.md](docs/DOMAIN.md) — домен diary-ai.ru + SMTP
 
 ---
 
@@ -88,8 +89,11 @@ git push origin main            # → GitHub Actions → VDS (~3–5 мин)
 ```
 AGENTS.md              ← ты здесь (главный файл AI)
 CONNECTION.local.md    ← пароли, SSH, API-ключи
-src/app/               ← страницы и API (Next.js)
+src/app/               ← страницы [locale]/ и API
+src/components/        ← layout, landing, ui
+src/i18n/              ← next-intl
 src/lib/               ← prisma, auth, utils
+messages/              ← ru.json, en.json
 prisma/schema.prisma   ← модель БД (единственный источник)
 infra/                 ← Docker, nginx, ops-скрипты сервера
 docs/                  ← документация

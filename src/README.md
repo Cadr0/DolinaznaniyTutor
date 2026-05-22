@@ -1,11 +1,14 @@
-# src — код приложения
-
 ```
-app/          страницы и API (Next.js App Router)
-  page.tsx    landing
-  layout.tsx  корневой layout
-  api/        REST endpoints
-lib/          общие модули (prisma, auth, utils)
+app/
+  [locale]/       страницы (i18n)
+  api/            REST без locale
+  globals.css
+components/
+  layout/         Header, Footer
+  landing/        секции
+  ui/             переиспользуемые UI
+i18n/             next-intl config
+lib/              prisma, auth, utils
 ```
 
-Правила: см. `.cursor/rules/nextjs.mdc` и `docs/ARCHITECTURE.md`.
+Правила: `docs/DESIGN.md`, `.cursor/rules/nextjs.mdc`
