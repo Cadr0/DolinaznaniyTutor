@@ -12,7 +12,8 @@
 | **Проект** | «Долина знаний» — платформа для репетиторов (комнаты, задания, маркетплейс) |
 | **Стек** | Next.js 15 · PostgreSQL · Prisma · Docker · GitHub Actions |
 | **Репозиторий** | https://github.com/Cadr0/DolinaznaniyTutor |
-| **Прод** | http://111.88.118.35 |
+| **Прод** | https://diary-ai.ru (после DNS) · http://111.88.118.35 |
+| **Домен** | [docs/DOMAIN.md](docs/DOMAIN.md) |
 | **Health** | http://111.88.118.35/api/health |
 | **Версия** | http://111.88.118.35/api/version |
 | **Секреты** | `CONNECTION.local.md` в корне (не в Git) |
@@ -78,6 +79,7 @@ git push origin main            # → GitHub Actions → VDS (~3–5 мин)
 5. [docs/OPS.md](docs/OPS.md) — деплой, откат, бэкапы
 6. [docs/CONNECTION.md](docs/CONNECTION.md) — доступы без секретов
 7. [docs/GITHUB_SETUP.md](docs/GITHUB_SETUP.md) — CI/CD secrets
+8. [docs/DOMAIN.md](docs/DOMAIN.md) — домен diary-ai.ru + SMTP
 
 ---
 

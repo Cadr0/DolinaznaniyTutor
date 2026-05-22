@@ -9,6 +9,7 @@
 | [ARCHITECTURE.md](ARCHITECTURE.md) | Стек, папки, модель данных |
 | [DEV.md](DEV.md) | Локальная разработка |
 | [OPS.md](OPS.md) | Деплой, откат, БД, мониторинг |
+| [DOMAIN.md](DOMAIN.md) | Домен diary-ai.ru, HTTPS, SMTP |
 | [CONNECTION.md](CONNECTION.md) | SSH, GitHub, сервер |
 | [GITHUB_SETUP.md](GITHUB_SETUP.md) | Secrets для CI/CD |
 
