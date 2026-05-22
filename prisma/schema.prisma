@@ -1,0 +1,120 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum UserRole {
+  TUTOR
+  STUDENT
+  ADMIN
+}
+
+enum RoomMemberRole {
+  TUTOR
+  STUDENT
+}
+
+enum AssignmentStatus {
+  DRAFT
+  PUBLISHED
+  ARCHIVED
+}
+
+enum SubmissionStatus {
+  PENDING
+  SUBMITTED
+  REVIEWED
+}
+
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  name      String?
+  role      UserRole @default(STUDENT)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  ownedRooms       Room[]            @relation("RoomOwner")
+  roomMemberships  RoomMember[]
+  submissions      Submission[]
+  marketplaceTasks MarketplaceTask[] @relation("TaskAuthor")
+}
+
+model Room {
+  id          String   @id @default(cuid())
+  title       String
+  description String?
+  slug        String   @unique
+  ownerId     String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  owner       User         @relation("RoomOwner", fields: [ownerId], references: [id], onDelete: Cascade)
+  members     RoomMember[]
+  assignments Assignment[]
+}
+
+model RoomMember {
+  id       String         @id @default(cuid())
+  roomId   String
+  userId   String
+  role     RoomMemberRole @default(STUDENT)
+  joinedAt DateTime       @default(now())
+
+  room Room @relation(fields: [roomId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([roomId, userId])
+}
+
+model Assignment {
+  id          String           @id @default(cuid())
+  roomId      String
+  title       String
+  content     String
+  status      AssignmentStatus @default(DRAFT)
+  dueAt       DateTime?
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+  sourceTaskId String?
+
+  room        Room         @relation(fields: [roomId], references: [id], onDelete: Cascade)
+  submissions Submission[]
+}
+
+model Submission {
+  id           String           @id @default(cuid())
+  assignmentId String
+  studentId    String
+  content      String?
+  status       SubmissionStatus @default(PENDING)
+  feedback     String?
+  submittedAt  DateTime?
+  reviewedAt   DateTime?
+  createdAt    DateTime         @default(now())
+  updatedAt    DateTime         @updatedAt
+
+  assignment Assignment @relation(fields: [assignmentId], references: [id], onDelete: Cascade)
+  student    User       @relation(fields: [studentId], references: [id], onDelete: Cascade)
+
+  @@unique([assignmentId, studentId])
+}
+
+model MarketplaceTask {
+  id          String   @id @default(cuid())
+  authorId    String
+  title       String
+  description String
+  content     String
+  subject     String?
+  gradeLevel  String?
+  isPublic    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  author User @relation("TaskAuthor", fields: [authorId], references: [id], onDelete: Cascade)
+}

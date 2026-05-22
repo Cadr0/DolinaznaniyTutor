@@ -1,0 +1,40 @@
+name: Deploy to VDS
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Deploy via SSH
+        uses: appleboy/ssh-action@v1.2.0
+        with:
+          host: ${{ secrets.VDS_HOST }}
+          username: ${{ secrets.VDS_USER }}
+          password: ${{ secrets.VDS_PASSWORD }}
+          script_stop: true
+          script: |
+            set -e
+            APP_DIR=/opt/dolinaznaniy
+            if [ ! -d "$APP_DIR/.git" ]; then
+              apt-get update -qq
+              apt-get install -y -qq git
+              mkdir -p "$APP_DIR"
+              git clone https://github.com/Cadr0/DolinaznaniyTutor.git "$APP_DIR"
+            fi
+            cd "$APP_DIR"
+            git fetch origin main
+            git reset --hard origin/main
+            if [ ! -f .env ]; then
+              echo "ERROR: .env not found on server. Create /opt/dolinaznaniy/.env"
+              exit 1
+            fi
+            docker compose -f docker-compose.prod.yml build app
+            docker compose -f docker-compose.prod.yml up -d db
+            sleep 5
+            docker compose -f docker-compose.prod.yml run --rm migrate || true
+            docker compose -f docker-compose.prod.yml up -d app
+            docker image prune -f
