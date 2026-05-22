@@ -3,14 +3,14 @@ import { NextIntlClientProvider } from "next-intl";
 import { getMessages, setRequestLocale } from "next-intl/server";
 import { hasLocale } from "next-intl";
 import { notFound } from "next/navigation";
-import { Fraunces, Nunito } from "next/font/google";
+import { Lora, Nunito } from "next/font/google";
 import { routing } from "@/i18n/routing";
 import { Header } from "@/components/layout/Header";
 import { Footer } from "@/components/layout/Footer";
 import { MobileActionBar } from "@/components/layout/MobileActionBar";
 import "../globals.css";
 
-const fraunces = Fraunces({
+const lora = Lora({
   subsets: ["latin", "cyrillic"],
   variable: "--font-display",
   display: "swap",

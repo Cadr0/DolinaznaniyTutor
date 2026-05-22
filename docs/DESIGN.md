@@ -15,7 +15,7 @@
 
 ## Типографика
 
-- **Заголовки:** Fraunces (serif) — `.font-display`
+- **Заголовки:** Lora (serif) — `.font-display`
 - **Текст:** Nunito (sans) — округлый, дружелюбный
 
 ## Паттерны Ozon / Wildberries
