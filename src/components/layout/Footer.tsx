@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { useTranslations } from "next-intl";
 
 export function Footer() {
@@ -11,18 +12,18 @@ export function Footer() {
           © {year} {t("tagline")}
         </p>
         <div className="flex flex-wrap gap-4 text-sm">
-          <a
+          <Link
             href="/api/health"
             className="touch-target inline-flex items-center text-slate-400 hover:text-emerald-400"
           >
             {t("health")}
-          </a>
-          <a
+          </Link>
+          <Link
             href="/api/version"
             className="touch-target inline-flex items-center text-slate-400 hover:text-emerald-400"
           >
             {t("version")}
-          </a>
+          </Link>
         </div>
       </div>
     </footer>
