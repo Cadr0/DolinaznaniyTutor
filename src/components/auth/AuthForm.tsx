@@ -27,11 +27,28 @@ async function postAuth<T>(path: string, body: Record<string, unknown>) {
 
   const payload = (await response.json().catch(() => ({}))) as T & {
     message?: string;
-    error?: { message?: string };
+    error?: { message?: string } | string;
   };
 
   if (!response.ok) {
-    throw new Error(payload.error?.message ?? payload.message ?? "Request failed");
+    const serverMessage =
+      typeof payload.error === "string"
+        ? payload.error
+        : payload.error?.message ?? payload.message;
+
+    if (serverMessage) {
+      throw new Error(serverMessage);
+    }
+
+    if (response.status === 429) {
+      throw new Error("Слишком много попыток. Подождите минуту и попробуйте снова.");
+    }
+
+    if (response.status >= 500) {
+      throw new Error("Сервер временно недоступен. Попробуйте через минуту.");
+    }
+
+    throw new Error("Не удалось выполнить запрос. Проверьте данные и попробуйте снова.");
   }
 
   return payload;

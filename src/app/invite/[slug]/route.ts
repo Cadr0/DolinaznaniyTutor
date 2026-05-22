@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { getAppOrigin } from "@/lib/app-url";
 import {
   findRoomByInviteSlug,
   joinRoomBySlug,
@@ -13,21 +14,21 @@ type Params = { params: Promise<{ slug: string }> };
 export async function GET(request: NextRequest, { params }: Params) {
   const { slug: rawSlug } = await params;
   const room = await findRoomByInviteSlug(rawSlug);
+  const origin = getAppOrigin(request);
 
   if (!room) {
-    return NextResponse.redirect(new URL("/register?invite=invalid", request.url));
+    return NextResponse.redirect(new URL("/register?invite=invalid", origin));
   }
 
   const session = await getCurrentSession();
-  const origin = new URL(request.url).origin;
 
   if (session?.user) {
     if (session.user.role === "STUDENT") {
       await joinRoomBySlug(session.user.id, room.slug);
-      return NextResponse.redirect(`${origin}/dashboard/rooms/${room.id}`);
+      return NextResponse.redirect(new URL(`/dashboard/rooms/${room.id}`, origin));
     }
 
-    return NextResponse.redirect(`${origin}/dashboard/rooms`);
+    return NextResponse.redirect(new URL("/dashboard/rooms", origin));
   }
 
   await setPendingRoomInvite(room.slug);
