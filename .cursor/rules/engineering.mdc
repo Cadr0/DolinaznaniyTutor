@@ -1,0 +1,26 @@
+---
+description: Prefer proven libraries and verify facts before implementing
+alwaysApply: true
+---
+
+# Engineering principles
+
+## Prefer ready-made, proven solutions
+
+- Use official docs and MCP (Context7, Supabase, Vercel) for library/API questions
+- Prefer maintained npm packages over custom implementations (auth, UI, validation, email)
+- Match project stack: Next.js App Router, Prisma, PostgreSQL, Docker — do not add parallel stacks
+
+## Verify, do not invent
+
+- Never fabricate: API endpoints, env variable names, CLI flags, package exports, file paths
+- Confirm in codebase (`grep`, `read`) or official documentation before using
+- Do not claim deploy/tests passed without actually running them
+- If blocked (missing password, tool, access) — state it clearly
+
+## Complex tasks workflow
+
+1. Check `docs/ROADMAP.md` scope
+2. Research existing solution (docs/MCP)
+3. Minimal integration into `src/` or `prisma/`
+4. Verify with build or runtime check

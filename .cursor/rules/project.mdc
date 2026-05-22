@@ -1,23 +1,22 @@
 ---
-description: Core project context for Dolinaznaniy Tutor — read AGENTS.md chain
+description: Core project context for Dolinaznaniy Tutor — read AGENTS.md first
 alwaysApply: true
 ---
 
 # Dolinaznaniy Tutor
 
-Product: tutoring platform (rooms, assignments, marketplace). Repo: Cadr0/DolinaznaniyTutor.
+**Entry point:** `AGENTS.md` (main file for any AI agent). Secrets: `CONNECTION.local.md`.
 
-**Before coding:** read `docs/ROADMAP.md` for current phase.
+Product: tutoring platform. Repo: Cadr0/DolinaznaniyTutor. Prod: http://111.88.118.35
 
-**Structure:**
-- `src/app/` — pages + API only
-- `src/lib/` — shared modules
-- `prisma/schema.prisma` — single source of truth for DB
-- `infra/` — deploy/server scripts, not app logic
-- `docs/` — all documentation
+**Before coding:** read `docs/ROADMAP.md` (current phase: Stage 2 — Auth).
 
-**Do not:** add separate backend, duplicate docs in root, put secrets in git, create files in obsolete `scripts/` or `site/`.
+**Structure:** `src/app/` pages+API · `src/lib/` shared · `prisma/schema.prisma` DB · `infra/` deploy only · `docs/` all docs.
 
-**Deploy:** push to `main` → GitHub Actions. Secrets in `CONNECTION.local.md` (local only).
+**Prefer proven solutions:** official docs, established npm packages, MCP tools (Context7, Supabase, Vercel). Do not reinvent auth/UI/infra.
 
-**Current phase:** Stage 2 — Auth (Better Auth, roles TUTOR/STUDENT).
+**Verify truth:** never invent APIs, env vars, CLI flags, or claim success without running checks (build, curl, SSH, logs). Read docs or code first.
+
+**Do not:** separate backend, secrets in git, files in obsolete `scripts/` or `site/`, duplicate docs in root.
+
+**Deploy:** push `main` → GitHub Actions. Ops: `.\infra\remote-ops.ps1 status` (needs `$env:VDS_PASSWORD`).

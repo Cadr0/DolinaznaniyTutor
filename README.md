@@ -2,7 +2,12 @@
 
 Next.js 15 · PostgreSQL · Prisma · Docker · GitHub Actions
 
-## Быстрый старт
+## AI-агент — начни здесь
+
+**Главный файл:** [AGENTS.md](AGENTS.md) — подключение, стек, правила, деплой.  
+**С паролями:** `AGENTS.md` + `CONNECTION.local.md`
+
+## Быстрый старт (разработчик)
 
 ```bash
 cp .env.example .env && docker compose up -d
@@ -13,7 +18,7 @@ npm install && npm run db:push && npm run dev
 
 | Кому | Файл |
 |------|------|
-| **Cursor AI** | [AGENTS.md](AGENTS.md) |
+| **Cursor AI** | **[AGENTS.md](AGENTS.md)** + `CONNECTION.local.md` |
 | **Разработчик** | [docs/README.md](docs/README.md) |
 | **Секреты** | `CONNECTION.local.md` (не в Git) |
 
