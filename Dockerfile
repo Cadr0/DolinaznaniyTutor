@@ -8,12 +8,20 @@ COPY prisma ./prisma/
 RUN npm install --omit=dev=false
 
 FROM base AS builder
+ARG GIT_COMMIT=dev
+ARG GIT_COMMIT_FULL=dev
+ENV GIT_COMMIT=$GIT_COMMIT
+ENV GIT_COMMIT_FULL=$GIT_COMMIT_FULL
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 ENV NEXT_TELEMETRY_DISABLED=1
 RUN npm run build
 
 FROM base AS runner
+ARG GIT_COMMIT=dev
+ARG GIT_COMMIT_FULL=dev
+ENV GIT_COMMIT=$GIT_COMMIT
+ENV GIT_COMMIT_FULL=$GIT_COMMIT_FULL
 ENV NODE_ENV=production
 ENV NEXT_TELEMETRY_DISABLED=1
 RUN addgroup --system --gid 1001 nodejs && adduser --system --uid 1001 nextjs

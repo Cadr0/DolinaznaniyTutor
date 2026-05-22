@@ -1,0 +1,38 @@
+name: Rollback on VDS
+
+on:
+  workflow_dispatch:
+    inputs:
+      commit:
+        description: "Git commit (short or full), e.g. 8297575"
+        required: true
+        type: string
+
+jobs:
+  rollback:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Rollback via SSH
+        uses: appleboy/ssh-action@v1.2.0
+        with:
+          host: ${{ secrets.VDS_HOST }}
+          username: ${{ secrets.VDS_USER }}
+          password: ${{ secrets.VDS_PASSWORD }}
+          script_stop: true
+          script: |
+            set -e
+            APP_DIR=/opt/dolinaznaniy
+            TARGET="${{ github.event.inputs.commit }}"
+            cd "$APP_DIR"
+            git fetch origin main
+            git checkout "$TARGET"
+            COMMIT=$(git rev-parse --short HEAD)
+            export GIT_COMMIT="${COMMIT}"
+            export GIT_COMMIT_FULL=$(git rev-parse HEAD)
+            docker compose -f docker-compose.prod.yml build app
+            docker compose -f docker-compose.prod.yml run --rm migrate || true
+            docker compose -f docker-compose.prod.yml up -d
+            mkdir -p .deploy
+            printf '{"commit":"%s","commitFull":"%s","deployedAt":"%s","branch":"rollback","rolledBackTo":"%s"}\n' \
+              "$COMMIT" "$(git rev-parse HEAD)" "$(date -u +%Y-%m-%dT%H:%M:%SZ)" "$TARGET" > .deploy/deploy-info.json
+            echo "Rolled back to ${COMMIT}"

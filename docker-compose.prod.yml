@@ -20,6 +20,9 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
+      args:
+        GIT_COMMIT: ${GIT_COMMIT:-unknown}
+        GIT_COMMIT_FULL: ${GIT_COMMIT_FULL:-unknown}
     restart: unless-stopped
     depends_on:
       db:
@@ -28,6 +31,8 @@ services:
       DATABASE_URL: postgresql://dolinaznaniy:${POSTGRES_PASSWORD}@db:5432/dolinaznaniy?schema=public
       NEXT_PUBLIC_APP_URL: ${NEXT_PUBLIC_APP_URL:-http://111.88.118.35}
       AUTH_SECRET: ${AUTH_SECRET}
+      GIT_COMMIT: ${GIT_COMMIT:-unknown}
+      GIT_COMMIT_FULL: ${GIT_COMMIT_FULL:-unknown}
       NODE_ENV: production
     ports:
       - "127.0.0.1:3000:3000"
@@ -47,6 +52,17 @@ services:
       - app
     profiles:
       - tools
+
+  adminer:
+    image: adminer:4
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    ports:
+      - "127.0.0.1:8080:8080"
+    networks:
+      - app
 
 volumes:
   postgres_data:

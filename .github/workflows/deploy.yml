@@ -9,6 +9,8 @@ jobs:
   deploy:
     runs-on: ubuntu-latest
     steps:
+      - uses: actions/checkout@v4
+
       - name: Deploy via SSH
         uses: appleboy/ssh-action@v1.2.0
         with:
@@ -19,22 +21,49 @@ jobs:
           script: |
             set -e
             APP_DIR=/opt/dolinaznaniy
+            BACKUP_DIR=/opt/dolinaznaniy-backups
+            mkdir -p "$BACKUP_DIR"
+
             if [ ! -d "$APP_DIR/.git" ]; then
               apt-get update -qq
               apt-get install -y -qq git
-              mkdir -p "$APP_DIR"
               git clone https://github.com/Cadr0/DolinaznaniyTutor.git "$APP_DIR"
             fi
+
             cd "$APP_DIR"
             git fetch origin main
             git reset --hard origin/main
+
+            COMMIT=$(git rev-parse --short HEAD)
+            COMMIT_FULL=$(git rev-parse HEAD)
+            DEPLOYED_AT=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
+
             if [ ! -f .env ]; then
-              echo "ERROR: .env not found on server. Create /opt/dolinaznaniy/.env"
+              echo "ERROR: .env not found. Run scripts/fix-server-env.sh on server first."
               exit 1
             fi
-            docker compose -f docker-compose.prod.yml build app
+
+            echo "==> DB backup before deploy..."
             docker compose -f docker-compose.prod.yml up -d db
-            sleep 5
-            docker compose -f docker-compose.prod.yml run --rm migrate || true
-            docker compose -f docker-compose.prod.yml up -d app
+            sleep 3
+            docker compose -f docker-compose.prod.yml exec -T db \
+              pg_dump -U dolinaznaniy dolinaznaniy \
+              > "$BACKUP_DIR/pre-${COMMIT}-$(date +%Y%m%d-%H%M%S).sql" 2>/dev/null || true
+
+            echo "==> Build app (commit ${COMMIT})..."
+            export GIT_COMMIT="${COMMIT}"
+            export GIT_COMMIT_FULL="${COMMIT_FULL}"
+            docker compose -f docker-compose.prod.yml build app
+
+            echo "==> Migrate..."
+            docker compose -f docker-compose.prod.yml run --rm migrate
+
+            echo "==> Start services..."
+            docker compose -f docker-compose.prod.yml up -d
+
+            mkdir -p .deploy
+            printf '{"commit":"%s","commitFull":"%s","deployedAt":"%s","branch":"main"}\n' \
+              "$COMMIT" "$COMMIT_FULL" "$DEPLOYED_AT" > .deploy/deploy-info.json
+
             docker image prune -f
+            echo "Deployed ${COMMIT} at ${DEPLOYED_AT}"

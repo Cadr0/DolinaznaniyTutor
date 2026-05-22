@@ -21,6 +21,12 @@ export default function HomePage() {
           >
             API Health
           </Link>
+          <Link
+            href="/api/version"
+            className="rounded-lg border border-slate-600 px-5 py-2.5 hover:border-slate-400"
+          >
+            Версия
+          </Link>
           <a
             href="https://github.com/Cadr0/DolinaznaniyTutor"
             className="rounded-lg border border-slate-600 px-5 py-2.5 hover:border-slate-400"
