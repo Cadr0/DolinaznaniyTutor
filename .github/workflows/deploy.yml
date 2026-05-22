@@ -24,7 +24,7 @@ jobs:
           node-version: "22"
 
       - name: Generate lockfile for reproducible builds
-        run: npm install --package-lock-only
+        run: npm install --package-lock-only --ignore-scripts
 
       - uses: docker/setup-buildx-action@v3
 
