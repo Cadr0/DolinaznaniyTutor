@@ -5,6 +5,7 @@
   },
   "nav": {
     "brand": "Valley of Knowledge",
+    "about": "About",
     "features": "Features",
     "forTutors": "For tutors",
     "login": "Log in",
@@ -12,34 +13,76 @@
   },
   "hero": {
     "badge": "Tutoring platform",
-    "title": "Teach smarter.",
-    "titleAccent": "Grow faster.",
-    "subtitle": "Student rooms, assignments, homework review, and a materials marketplace — all in one place. Mobile-friendly.",
+    "title": "Teach with joy.",
+    "titleAccent": "Grow together with students.",
+    "subtitle": "Rooms, assignments, and a materials marketplace — simple and familiar, like apps you already use. On phone and desktop.",
+    "emailPlaceholder": "Your email",
     "ctaPrimary": "Start for free",
     "ctaSecondary": "How it works",
     "trustFree": "Free to start",
-    "trustMobile": "Works on mobile",
+    "trustMobile": "Mobile-friendly",
     "trustSecure": "Your data is safe"
   },
+  "values": {
+    "title": "Our approach",
+    "subtitle": "Three simple steps to comfortable learning",
+    "learn": {
+      "title": "Learn",
+      "desc": "Clear materials and tasks — students know what to do right away."
+    },
+    "practice": {
+      "title": "Practice",
+      "desc": "Homework and exercises in one place, without endless chats."
+    },
+    "grow": {
+      "title": "Grow",
+      "desc": "Progress and feedback — motivation for students, control for you."
+    }
+  },
   "features": {
-    "title": "Everything tutors and students need",
-    "subtitle": "Less admin — more time for learning",
+    "title": "Platform features",
+    "subtitle": "Everything you need — familiar and easy",
+    "learnMore": "Learn more",
     "tutor": {
-      "title": "Tutor",
-      "desc": "Create rooms, invite students, assign and review work."
+      "title": "For tutors",
+      "desc": "Rooms, students, assignments, and review — in one dashboard."
     },
     "student": {
-      "title": "Student",
-      "desc": "Personal dashboard, tasks, progress, and feedback — clear from the first screen."
+      "title": "For students",
+      "desc": "Personal dashboard with tasks and progress — clear from the first screen."
     },
     "marketplace": {
       "title": "Marketplace",
-      "desc": "Use ready-made tasks or publish your own — save prep time."
+      "desc": "Ready-made materials from peers — save prep time."
+    },
+    "progress": {
+      "title": "Progress",
+      "desc": "Visual stats — see how each student moves toward their goal."
+    }
+  },
+  "benefits": {
+    "title": "Why tutors choose us",
+    "subtitle": "Less admin — more time for teaching",
+    "rooms": {
+      "title": "Student rooms",
+      "desc": "A dedicated space for each student — materials stay organized."
+    },
+    "tasks": {
+      "title": "Tasks and review",
+      "desc": "Assign work, students submit — you review in a few taps."
+    },
+    "feedback": {
+      "title": "Feedback",
+      "desc": "Comments and grades — students know what to improve."
+    },
+    "mobile": {
+      "title": "On mobile",
+      "desc": "Like familiar shopping apps — everything at hand, big buttons."
     }
   },
   "cta": {
     "title": "Ready to try?",
-    "subtitle": "Registration opens soon. Stay tuned for updates.",
+    "subtitle": "Registration opens soon. Leave your email — we'll notify you at launch.",
     "button": "Get launch updates"
   },
   "footer": {

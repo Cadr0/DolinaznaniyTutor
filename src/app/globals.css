@@ -1,16 +1,26 @@
 @import "tailwindcss";
 
 :root {
-  --background: #0b1220;
-  --foreground: #f1f5f9;
-  --muted: #94a3b8;
-  --card: #111827;
-  --card-border: #1e293b;
-  --accent: #10b981;
-  --accent-hover: #34d399;
-  --accent-muted: #064e3b;
-  --radius: 0.75rem;
+  --background: #f7fafa;
+  --background-soft: #edf7f5;
+  --background-blob: #d8f0eb;
+  --foreground: #3d5059;
+  --foreground-strong: #2a3e47;
+  --muted: #7a9199;
+  --card: #ffffff;
+  --card-border: #e3efec;
+  --accent: #3daa9a;
+  --accent-hover: #349786;
+  --accent-soft: #e0f5f1;
+  --accent-light: #b8e8de;
+  --coral: #f4a896;
+  --sand: #f5e6c8;
+  --lavender: #d4c5e8;
+  --radius: 1rem;
+  --radius-pill: 9999px;
   --touch-min: 2.75rem;
+  --shadow-soft: 0 4px 24px rgba(61, 170, 154, 0.1);
+  --shadow-card: 0 8px 32px rgba(42, 62, 71, 0.06);
 }
 
 @theme inline {
@@ -18,6 +28,10 @@
   --color-foreground: var(--foreground);
   --color-muted: var(--muted);
   --color-accent: var(--accent);
+  --color-accent-soft: var(--accent-soft);
+  --color-card: var(--card);
+  --font-display: var(--font-display);
+  --font-body: var(--font-body);
 }
 
 html {
@@ -28,24 +42,56 @@ html {
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family:
-    system-ui,
-    -apple-system,
-    "Segoe UI",
-    Roboto,
-    sans-serif;
+  font-family: var(--font-body), system-ui, sans-serif;
   text-rendering: optimizeLegibility;
   padding-left: env(safe-area-inset-left);
   padding-right: env(safe-area-inset-right);
 }
 
-/* Readable line length for body text */
+.font-display {
+  font-family: var(--font-display), Georgia, serif;
+}
+
 .prose-width {
   max-width: 65ch;
 }
 
-/* Minimum touch target (44px) */
 .touch-target {
   min-height: var(--touch-min);
   min-width: var(--touch-min);
+}
+
+/* Soft organic blobs */
+.blob {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(60px);
+  pointer-events: none;
+}
+
+.blob-mint {
+  background: var(--background-blob);
+}
+
+.blob-lavender {
+  background: var(--lavender);
+  opacity: 0.35;
+}
+
+/* Ozon/WB-style card */
+.card-soft {
+  background: var(--card);
+  border: 1px solid var(--card-border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-card);
+}
+
+/* Hide scrollbar for horizontal carousels */
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
 }

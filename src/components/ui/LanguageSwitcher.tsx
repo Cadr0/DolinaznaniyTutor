@@ -1,9 +1,8 @@
 "use client";
 
-import { useLocale } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 import { usePathname, useRouter } from "@/i18n/navigation";
 import { routing, type Locale } from "@/i18n/routing";
-import { useTranslations } from "next-intl";
 
 export function LanguageSwitcher() {
   const locale = useLocale() as Locale;
@@ -17,7 +16,7 @@ export function LanguageSwitcher() {
 
   return (
     <div
-      className="inline-flex rounded-lg border border-slate-700/80 bg-slate-900/60 p-0.5"
+      className="inline-flex rounded-full border border-[var(--card-border)] bg-white p-0.5 shadow-sm"
       role="group"
       aria-label="Language"
     >
@@ -26,10 +25,10 @@ export function LanguageSwitcher() {
           key={loc}
           type="button"
           onClick={() => switchLocale(loc)}
-          className={`touch-target rounded-md px-3 py-1.5 text-sm font-medium transition-colors ${
+          className={`touch-target rounded-full px-3 py-1 text-sm font-semibold transition-colors ${
             locale === loc
-              ? "bg-emerald-600 text-white"
-              : "text-slate-400 hover:text-white"
+              ? "bg-[var(--accent)] text-white"
+              : "text-[var(--muted)] hover:text-[var(--foreground-strong)]"
           }`}
           aria-pressed={locale === loc}
         >

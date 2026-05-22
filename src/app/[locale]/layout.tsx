@@ -3,10 +3,24 @@ import { NextIntlClientProvider } from "next-intl";
 import { getMessages, setRequestLocale } from "next-intl/server";
 import { hasLocale } from "next-intl";
 import { notFound } from "next/navigation";
+import { Fraunces, Nunito } from "next/font/google";
 import { routing } from "@/i18n/routing";
 import { Header } from "@/components/layout/Header";
 import { Footer } from "@/components/layout/Footer";
+import { MobileActionBar } from "@/components/layout/MobileActionBar";
 import "../globals.css";
+
+const fraunces = Fraunces({
+  subsets: ["latin", "cyrillic"],
+  variable: "--font-display",
+  display: "swap",
+});
+
+const nunito = Nunito({
+  subsets: ["latin", "cyrillic"],
+  variable: "--font-body",
+  display: "swap",
+});
 
 type Props = {
   children: React.ReactNode;
@@ -29,7 +43,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
-  themeColor: "#0b1220",
+  themeColor: "#f7fafa",
 };
 
 export default async function LocaleLayout({ children, params }: Props) {
@@ -40,12 +54,13 @@ export default async function LocaleLayout({ children, params }: Props) {
   const messages = await getMessages();
 
   return (
-    <html lang={locale}>
+    <html lang={locale} className={`${fraunces.variable} ${nunito.variable}`}>
       <body className="flex min-h-dvh flex-col antialiased">
         <NextIntlClientProvider messages={messages}>
           <Header />
-          <main className="flex-1">{children}</main>
+          <main className="flex-1 pb-20 sm:pb-0">{children}</main>
           <Footer />
+          <MobileActionBar />
         </NextIntlClientProvider>
       </body>
     </html>

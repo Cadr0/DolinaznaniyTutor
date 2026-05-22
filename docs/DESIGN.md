@@ -1,61 +1,45 @@
 # UI и UX
 
-## Принципы (психология + UX)
+## Стиль
 
-| Принцип | Как применяем |
-|---------|----------------|
-| **Один главный CTA** | Одна зелёная кнопка на экран — «Начать бесплатно» |
-| **Снижение тревоги** | Trust-блоки: бесплатно, мобильно, безопасно |
-| **Правило 3** | Три карточки возможностей — не перегружать |
-| **Mobile-first** | Вёрстка с телефона, `min-h-dvh`, safe-area |
-| **Touch targets** | Минимум 44px (`.touch-target`) |
-| **Читаемость** | `max-width: 65ch`, контраст slate/emerald |
-| **Прогресс** | (этап 3+) видимый прогресс ученика — мотивация |
+Мягкий, дружелюбный, светлый — **без чёрного (#000)**. Референс: образовательные лендинги с mint/teal + off-white.
 
-## Цвета
+| Элемент | Значение |
+|---------|----------|
+| Фон | `#f7fafa` |
+| Текст | `#2a3e47` (тёплый charcoal) |
+| Вторичный текст | `#7a9199` |
+| Акцент | `#3daa9a` (mint/teal) |
+| Карточки | белые, мягкая тень |
+| Кнопки | pill (полностью скруглённые) |
 
-- Фон: `#0b1220` — спокойный, не утомляет
-- Акцент: emerald — рост, обучение, доверие
-- Текст: slate — иерархия через opacity
+## Типографика
 
-Токены: `src/app/globals.css` → `:root`
+- **Заголовки:** Fraunces (serif) — `.font-display`
+- **Текст:** Nunito (sans) — округлый, дружелюбный
 
-## i18n (next-intl)
+## Паттерны Ozon / Wildberries
 
-| | |
-|---|---|
-| Библиотека | [next-intl](https://next-intl.dev) |
-| Языки | `ru` (default), `en` |
-| URL | `/` = ru, `/en` = english (`localePrefix: as-needed`) |
-| Переводы | `messages/ru.json`, `messages/en.json` |
-| Навигация | `@/i18n/navigation` — Link, useRouter |
-| Новый текст | ключ в **оба** JSON-файла |
+| Паттерн | Где |
+|---------|-----|
+| Logo слева, nav по центру, CTA справа | Header |
+| «Войти» outline + «Начать» filled pill | Header |
+| Sticky bottom bar с главной кнопкой | Mobile (≤ sm) |
+| Горизонтальный скролл карточек | Features (mobile) |
+| «Подробнее →» в карточке | Features |
+| Email + кнопка в одной pill-форме | Hero |
 
-### Добавить перевод
+## i18n
 
-1. Ключ в `messages/ru.json` и `messages/en.json`
-2. `useTranslations('namespace')` в компоненте
-3. Не хардкодить строки в JSX
+См. предыдущие правила — `messages/ru.json` + `messages/en.json`, `@/i18n/navigation`.
 
-## Структура компонентов
+## Компоненты
 
 ```
-src/components/
-  layout/     Header, Footer
-  landing/    секции главной
-  ui/         LanguageSwitcher, будущие кнопки
+ui/Button.tsx          primary | secondary | ghost
+layout/MobileActionBar sticky CTA на mobile
+landing/ValuesSection  3 колонки (учиться / практиковать / расти)
+landing/BenefitsSection 2×2 чеклист
 ```
 
-## Mobile
-
-- Sticky header + backdrop blur
-- Кнопки на всю ширину на `< sm`
-- `pb-[env(safe-area-inset-bottom)]` в footer
-- `viewport` theme-color в layout
-
-## Дальше (по ROADMAP)
-
-- [ ] shadcn/ui — формы Auth (этап 2)
-- [ ] Skeleton loaders
-- [ ] PWA manifest (опционально)
-- [ ] Тёмная/светлая тема — не приоритет (dark by default)
+Токены: `src/app/globals.css`

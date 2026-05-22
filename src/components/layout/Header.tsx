@@ -1,41 +1,57 @@
 import { useTranslations } from "next-intl";
 import { Link } from "@/i18n/navigation";
 import { LanguageSwitcher } from "@/components/ui/LanguageSwitcher";
+import { ButtonLink } from "@/components/ui/Button";
 
 export function Header() {
   const t = useTranslations("nav");
 
   return (
-    <header className="sticky top-0 z-50 border-b border-slate-800/80 bg-slate-950/80 backdrop-blur-md">
-      <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-4 py-3 sm:px-6">
+    <header className="sticky top-0 z-50 border-b border-[var(--card-border)] bg-white/95 shadow-sm backdrop-blur-sm">
+      <div className="mx-auto flex max-w-6xl items-center gap-3 px-4 py-3 sm:px-6">
+        {/* Logo — Ozon/WB: слева */}
         <Link
           href="/"
-          className="text-lg font-bold tracking-tight text-white"
+          className="font-display shrink-0 text-lg font-semibold text-[var(--foreground-strong)] sm:text-xl"
         >
           {t("brand")}
         </Link>
 
-        <nav className="hidden items-center gap-6 text-sm text-slate-300 md:flex">
-          <a href="#features" className="hover:text-white">
+        {/* Nav — по центру на desktop, как каталог у маркетплейсов */}
+        <nav className="hidden flex-1 items-center justify-center gap-8 text-sm font-medium text-[var(--muted)] md:flex">
+          <a
+            href="#values"
+            className="transition-colors hover:text-[var(--accent)]"
+          >
+            {t("about")}
+          </a>
+          <a
+            href="#features"
+            className="transition-colors hover:text-[var(--accent)]"
+          >
             {t("features")}
           </a>
-          <span className="text-slate-600">{t("forTutors")}</span>
+          <a
+            href="#benefits"
+            className="transition-colors hover:text-[var(--accent)]"
+          >
+            {t("forTutors")}
+          </a>
         </nav>
 
-        <div className="flex items-center gap-2 sm:gap-3">
+        {/* Actions — справа: Войти + главная кнопка */}
+        <div className="ml-auto flex items-center gap-2 sm:gap-3">
           <LanguageSwitcher />
-          <Link
+          <ButtonLink
             href="/"
-            className="touch-target hidden items-center rounded-lg border border-slate-600 px-4 text-sm font-medium text-slate-200 sm:inline-flex"
+            variant="ghost"
+            className="hidden px-4 sm:inline-flex"
           >
             {t("login")}
-          </Link>
-          <Link
-            href="/"
-            className="touch-target inline-flex items-center rounded-lg bg-emerald-600 px-4 text-sm font-semibold text-white hover:bg-emerald-500"
-          >
+          </ButtonLink>
+          <ButtonLink href="/" className="px-5 sm:px-6">
             {t("start")}
-          </Link>
+          </ButtonLink>
         </div>
       </div>
     </header>
