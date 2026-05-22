@@ -93,6 +93,14 @@ jobs:
               git clone https://github.com/Cadr0/DolinaznaniyTutor.git /opt/dolinaznaniy
             fi
             cd /opt/dolinaznaniy
+            git fetch origin main
+            git reset --hard origin/main
+            if [ ! -f infra/deploy.sh ]; then
+              echo "ERROR: infra/deploy.sh not found in $(pwd)"
+              ls -la
+              exit 1
+            fi
+            chmod +x infra/deploy.sh
             export IMAGE_TAG=${{ github.sha }}
             export GHCR_USER=cadr0
             bash infra/deploy.sh
