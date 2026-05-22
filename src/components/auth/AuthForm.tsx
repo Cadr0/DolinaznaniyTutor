@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 import { Link } from "@/i18n/navigation";
 import { useRouter } from "@/i18n/navigation";
 import { Button } from "@/components/ui/Button";
@@ -13,6 +13,9 @@ type Step = "credentials" | "code" | "reset";
 type AuthFormProps = {
   mode: Mode;
   initialRole?: Role;
+  inviteRoomSlug?: string;
+  inviteRoomTitle?: string;
+  lockRole?: boolean;
 };
 
 async function postAuth<T>(path: string, body: Record<string, unknown>) {
@@ -34,8 +37,14 @@ async function postAuth<T>(path: string, body: Record<string, unknown>) {
   return payload;
 }
 
-export function AuthForm({ mode, initialRole = "STUDENT" }: AuthFormProps) {
+export function AuthForm({
+  mode,
+  initialRole = "STUDENT",
+  inviteRoomTitle,
+  lockRole = false,
+}: AuthFormProps) {
   const t = useTranslations("auth");
+  const locale = useLocale();
   const router = useRouter();
   const [role, setRole] = useState<Role>(initialRole);
   const [email, setEmail] = useState("");
@@ -53,6 +62,16 @@ export function AuthForm({ mode, initialRole = "STUDENT" }: AuthFormProps) {
     if (mode === "forgot") return t("forgotTitle");
     return t("loginTitle");
   }, [mode, t]);
+
+  async function goAfterAuth() {
+    const response = await fetch("/api/rooms/join-pending", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ locale }),
+    });
+    const payload = (await response.json().catch(() => ({}))) as { redirectTo?: string };
+    router.push(payload.redirectTo ?? "/dashboard");
+  }
 
   async function handleCredentialsSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -76,7 +95,7 @@ export function AuthForm({ mode, initialRole = "STUDENT" }: AuthFormProps) {
         password,
         rememberMe,
       });
-      router.push("/onboarding");
+      await goAfterAuth();
     } catch (authError) {
       setError(authError instanceof Error ? authError.message : t("genericError"));
     } finally {
@@ -96,7 +115,7 @@ export function AuthForm({ mode, initialRole = "STUDENT" }: AuthFormProps) {
         password,
         rememberMe,
       });
-      router.push("/onboarding");
+      await goAfterAuth();
     } catch (authError) {
       setError(authError instanceof Error ? authError.message : t("genericError"));
     } finally {
@@ -130,7 +149,7 @@ export function AuthForm({ mode, initialRole = "STUDENT" }: AuthFormProps) {
         password,
         rememberMe: true,
       });
-      router.push("/onboarding");
+      await goAfterAuth();
     } catch (authError) {
       setError(authError instanceof Error ? authError.message : t("genericError"));
     } finally {
@@ -181,9 +200,10 @@ export function AuthForm({ mode, initialRole = "STUDENT" }: AuthFormProps) {
       title={title}
       subtitle={mode === "register" ? t("registerSubtitle") : t("loginSubtitle")}
       error={error}
+      inviteRoomTitle={mode === "register" ? inviteRoomTitle : undefined}
     >
       <form className="space-y-4" onSubmit={handleCredentialsSubmit}>
-        {mode === "register" ? (
+        {mode === "register" && !lockRole ? (
           <div className="grid grid-cols-2 gap-2 rounded-[1.5rem] bg-[var(--background-soft)] p-1">
             <RoleButton active={role === "STUDENT"} onClick={() => setRole("STUDENT")}>
               {t("studentRole")}
@@ -191,6 +211,11 @@ export function AuthForm({ mode, initialRole = "STUDENT" }: AuthFormProps) {
             <RoleButton active={role === "TUTOR"} onClick={() => setRole("TUTOR")}>
               {t("tutorRole")}
             </RoleButton>
+          </div>
+        ) : null}
+        {mode === "register" && lockRole ? (
+          <div className="rounded-2xl bg-[var(--accent-soft)] px-4 py-3 text-sm font-semibold text-[var(--accent)]">
+            Регистрация ученика{inviteRoomTitle ? `: ${inviteRoomTitle}` : ""}
           </div>
         ) : null}
         <EmailInput value={email} onChange={setEmail} label={t("email")} />
@@ -232,18 +257,24 @@ function AuthShell({
   title,
   subtitle,
   error,
+  inviteRoomTitle,
   children,
 }: {
   title: string;
   subtitle: string;
   error: string;
+  inviteRoomTitle?: string;
   children: React.ReactNode;
 }) {
   return (
     <section className="mx-auto flex min-h-[calc(100dvh-10rem)] max-w-6xl items-center px-4 py-8 sm:px-6">
       <div className="mx-auto w-full max-w-md rounded-[2rem] border border-[var(--card-border)] bg-white p-5 shadow-[var(--shadow-card)] sm:p-8">
         <h1 className="font-display text-3xl text-[var(--foreground-strong)]">{title}</h1>
-        <p className="mt-2 text-sm leading-relaxed text-[var(--muted)]">{subtitle}</p>
+        <p className="mt-2 text-sm leading-relaxed text-[var(--muted)]">
+          {inviteRoomTitle
+            ? `После регистрации вы сразу попадёте в комнату «${inviteRoomTitle}».`
+            : subtitle}
+        </p>
         {error ? (
           <div className="mt-4 rounded-2xl bg-red-50 px-4 py-3 text-sm text-red-700">{error}</div>
         ) : null}

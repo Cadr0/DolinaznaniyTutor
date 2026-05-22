@@ -25,6 +25,7 @@ git push origin main
 ```
 
 Пайплайн:
+
 1. GitHub Actions собирает и пушит образы в GHCR.
 2. Сервер делает pull готовых образов.
 3. Миграции применяются в контейнере `migrate`.
@@ -42,6 +43,7 @@ bash infra/deploy.sh
 ## Команды ops
 
 На сервере:
+
 ```bash
 bash infra/ops.sh status
 bash infra/ops.sh health
@@ -52,6 +54,7 @@ bash infra/ops.sh domain
 ```
 
 С Windows:
+
 ```powershell
 $env:VDS_PASSWORD = "..."
 .\infra\remote-ops.ps1 init-ssh-key   # один раз на новом ПК
@@ -74,6 +77,7 @@ bash infra/setup-domain.sh
 ```
 
 Проверка:
+
 ```bash
 curl -I https://diary-ai.ru
 curl -s https://diary-ai.ru/api/health
@@ -82,14 +86,16 @@ curl -s https://diary-ai.ru/api/version
 
 ## GitHub Secrets (обязательные)
 
-| Secret              | Значение                      |
-| ------------------- | ----------------------------- |
-| `VDS_HOST`          | `111.88.118.35`              |
-| `VDS_USER`          | `root`                        |
-| `VDS_PASSWORD`      | пароль root SSH               |
+
+| Secret              | Значение                       |
+| ------------------- | ------------------------------ |
+| `VDS_HOST`          | `111.88.118.35`                |
+| `VDS_USER`          | `root`                         |
+| `VDS_PASSWORD`      | пароль root SSH                |
 | `GHCR_PAT`          | token с правом `read:packages` |
-| `POSTGRES_PASSWORD` | из `/opt/dolinaznaniy/.env`  |
-| `AUTH_SECRET`       | из `/opt/dolinaznaniy/.env`  |
+| `POSTGRES_PASSWORD` | из `/opt/dolinaznaniy/.env`    |
+| `AUTH_SECRET`       | из `/opt/dolinaznaniy/.env`    |
+
 
 `GHCR_PAT` обязателен: без него сервер не сможет скачать готовый образ и начнет локальную сборку.
 
@@ -114,11 +120,11 @@ ssh -L 8080:127.0.0.1:8080 root@111.88.118.35
 ## Диагностика проблем
 
 1. Проверить workflow `Deploy to VDS`:
-   - job `build` (сборка/публикация образов)
-   - job `deploy` (SSH/запуск deploy.sh)
+  - job `build` (сборка/публикация образов)
+  - job `deploy` (SSH/запуск deploy.sh)
 2. На сервере: `bash infra/ops.sh status`
 3. Логи приложения: `bash infra/ops.sh logs app`
 4. Проверка API:
-   - `curl -s http://127.0.0.1:3000/api/health`
-   - `curl -s http://127.0.0.1:3000/api/version`
+  - `curl -s http://127.0.0.1:3000/api/health`
+  - `curl -s http://127.0.0.1:3000/api/version`
 

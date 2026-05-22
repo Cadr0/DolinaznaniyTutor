@@ -26,9 +26,5 @@ export async function redirectAfterAuth(locale: string) {
     redirect(localePath(locale, "/login"));
   }
 
-  if (!session.user.onboardingCompletedAt) {
-    redirect(localePath(locale, "/onboarding"));
-  }
-
   redirect(localePath(locale, "/dashboard"));
 }

@@ -5,7 +5,7 @@ function HeroIllustration() {
   return (
     <svg
       viewBox="0 0 400 320"
-      className="h-auto w-full max-w-md"
+      className="mx-auto h-auto w-full max-w-sm opacity-90"
       aria-hidden
       role="img"
     >
@@ -38,8 +38,8 @@ export function Hero() {
       <div className="blob blob-mint -left-20 top-10 h-64 w-64 opacity-60" aria-hidden />
       <div className="blob blob-lavender -right-16 top-32 h-48 w-48" aria-hidden />
 
-      <div className="relative mx-auto grid max-w-6xl items-center gap-10 lg:grid-cols-2 lg:gap-16">
-        <div>
+      <div className="relative mx-auto max-w-6xl">
+        <div className="max-w-3xl">
           <span className="mb-4 inline-block rounded-full bg-[var(--accent-soft)] px-4 py-1.5 text-sm font-semibold text-[var(--accent)]">
             {t("badge")}
           </span>
@@ -53,27 +53,25 @@ export function Hero() {
           <p className="prose-width mt-5 text-lg leading-relaxed text-[var(--muted)]">
             {t("subtitle")}
           </p>
-
-          <RoleChoice />
-
-          <ul className="mt-8 flex flex-col gap-2 text-sm text-[var(--muted)] sm:flex-row sm:gap-6">
-            {[t("trustFree"), t("trustMobile"), t("trustSecure")].map(
-              (item) => (
-                <li key={item} className="flex items-center gap-2">
-                  <span
-                    className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-[var(--accent-soft)] text-xs text-[var(--accent)]"
-                    aria-hidden
-                  >
-                    ✓
-                  </span>
-                  {item}
-                </li>
-              )
-            )}
-          </ul>
         </div>
 
-        <div className="flex justify-center lg:justify-end">
+        <RoleChoice />
+
+        <ul className="mt-8 flex flex-col gap-2 text-sm text-[var(--muted)] sm:flex-row sm:gap-6">
+          {[t("trustFree"), t("trustMobile"), t("trustSecure")].map((item) => (
+            <li key={item} className="flex items-center gap-2">
+              <span
+                className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-[var(--accent-soft)] text-xs text-[var(--accent)]"
+                aria-hidden
+              >
+                ✓
+              </span>
+              {item}
+            </li>
+          ))}
+        </ul>
+
+        <div className="mt-10 hidden justify-center sm:flex lg:mt-12">
           <HeroIllustration />
         </div>
       </div>

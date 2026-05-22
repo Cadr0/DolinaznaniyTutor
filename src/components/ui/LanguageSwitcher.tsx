@@ -16,24 +16,30 @@ export function LanguageSwitcher() {
 
   return (
     <div
-      className="inline-flex rounded-full border border-[var(--card-border)] bg-white p-0.5 shadow-sm"
+      className="flex items-center gap-1 text-xs text-[var(--muted)]"
       role="group"
       aria-label="Language"
     >
-      {routing.locales.map((loc) => (
-        <button
-          key={loc}
-          type="button"
-          onClick={() => switchLocale(loc)}
-          className={`touch-target rounded-full px-3 py-1 text-sm font-semibold transition-colors ${
-            locale === loc
-              ? "bg-[var(--accent)] text-white"
-              : "text-[var(--muted)] hover:text-[var(--foreground-strong)]"
-          }`}
-          aria-pressed={locale === loc}
-        >
-          {t(loc)}
-        </button>
+      {routing.locales.map((loc, index) => (
+        <span key={loc} className="inline-flex items-center gap-1">
+          {index > 0 ? (
+            <span className="text-[var(--card-border)]" aria-hidden>
+              /
+            </span>
+          ) : null}
+          <button
+            type="button"
+            onClick={() => switchLocale(loc)}
+            className={`rounded px-1 py-0.5 font-medium transition-colors hover:text-[var(--foreground-strong)] ${
+              locale === loc
+                ? "text-[var(--foreground-strong)]"
+                : "text-[var(--muted)]"
+            }`}
+            aria-pressed={locale === loc}
+          >
+            {t(loc)}
+          </button>
+        </span>
       ))}
     </div>
   );

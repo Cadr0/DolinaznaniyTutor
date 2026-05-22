@@ -55,7 +55,7 @@
     "rememberMe": "Remember me",
     "studentRole": "I am a student",
     "tutorRole": "I am a teacher",
-    "registerButton": "Get code",
+    "registerButton": "Continue",
     "loginButton": "Log in",
     "sendCode": "Send code",
     "saveNewPassword": "Save new password",
@@ -131,6 +131,19 @@
     "tagline": "Valley of Knowledge — tutoring platform",
     "health": "Status",
     "version": "Version"
+  },
+  "app": {
+    "home": "Home",
+    "assignments": "Tasks",
+    "homework": "Homework",
+    "rooms": "Rooms",
+    "progress": "Progress",
+    "students": "Students",
+    "review": "Review",
+    "materials": "Materials",
+    "settings": "Settings",
+    "roleStudent": "Student",
+    "roleTeacher": "Teacher"
   },
   "lang": {
     "ru": "Рус",

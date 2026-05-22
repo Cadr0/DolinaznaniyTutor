@@ -55,7 +55,7 @@
     "rememberMe": "Запомнить меня",
     "studentRole": "Я ученик",
     "tutorRole": "Я учитель",
-    "registerButton": "Получить код",
+    "registerButton": "Войти",
     "loginButton": "Войти",
     "sendCode": "Отправить код",
     "saveNewPassword": "Сохранить новый пароль",
@@ -131,6 +131,19 @@
     "tagline": "Долина знаний — платформа для репетиторов",
     "health": "Статус",
     "version": "Версия"
+  },
+  "app": {
+    "home": "Кабинет",
+    "assignments": "Задания",
+    "homework": "Домашняя",
+    "rooms": "Комнаты",
+    "progress": "Прогресс",
+    "students": "Ученики",
+    "review": "Проверка",
+    "materials": "Материалы",
+    "settings": "Настройки",
+    "roleStudent": "Ученик",
+    "roleTeacher": "Учитель"
   },
   "lang": {
     "ru": "Рус",
