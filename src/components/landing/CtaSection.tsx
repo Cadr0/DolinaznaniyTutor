@@ -18,7 +18,7 @@ export function CtaSection() {
           <p className="prose-width mx-auto mt-4 text-[var(--muted)]">
             {t("subtitle")}
           </p>
-          <ButtonLink href="/" className="mt-8 px-8">
+          <ButtonLink href="/register" className="mt-8 px-8">
             {t("button")}
           </ButtonLink>
         </div>

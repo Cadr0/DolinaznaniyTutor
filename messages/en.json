@@ -9,7 +9,12 @@
     "features": "Features",
     "forTutors": "For tutors",
     "login": "Log in",
-    "start": "Get started"
+    "start": "Get started",
+    "student": "Student",
+    "teacher": "Teacher",
+    "dashboard": "Dashboard",
+    "profile": "Profile",
+    "settings": "Settings"
   },
   "hero": {
     "badge": "Tutoring platform",
@@ -22,6 +27,43 @@
     "trustFree": "Free to start",
     "trustMobile": "Mobile-friendly",
     "trustSecure": "Your data is safe"
+  },
+  "roleChoice": {
+    "studentEyebrow": "For learning",
+    "studentTitle": "I am a student",
+    "studentText": "Open your dashboard, receive assignments, and track your progress.",
+    "studentButton": "Register as student",
+    "tutorEyebrow": "For teaching",
+    "tutorTitle": "I am a teacher",
+    "tutorText": "Create rooms, invite students, and review assignments.",
+    "tutorButton": "Register as teacher"
+  },
+  "auth": {
+    "loginTitle": "Log in",
+    "loginSubtitle": "Enter your email and password. If the email is not verified yet, finish registration with the email code.",
+    "registerTitle": "Registration",
+    "registerSubtitle": "Choose your role, enter email and password. We will send a 4-digit code.",
+    "forgotTitle": "Password recovery",
+    "forgotSubtitle": "We will send an email code first, then let you set a new password.",
+    "codeTitle": "Enter the code",
+    "codeSubtitle": "We sent 4 digits to {email}.",
+    "email": "Email",
+    "password": "Password",
+    "newPassword": "New password",
+    "repeatPassword": "Repeat new password",
+    "code": "Email code",
+    "rememberMe": "Remember me",
+    "studentRole": "I am a student",
+    "tutorRole": "I am a teacher",
+    "registerButton": "Get code",
+    "loginButton": "Log in",
+    "sendCode": "Send code",
+    "saveNewPassword": "Save new password",
+    "confirmAndEnter": "Confirm and enter",
+    "forgotLink": "Forgot password?",
+    "passwordMismatch": "Passwords do not match",
+    "genericError": "Something went wrong. Please try again.",
+    "policyNotice": "By continuing, you accept the <terms>terms of service</terms> and <policy>data processing policy</policy>."
   },
   "values": {
     "title": "Our approach",
@@ -82,8 +124,8 @@
   },
   "cta": {
     "title": "Ready to try?",
-    "subtitle": "Registration opens soon. Leave your email — we'll notify you at launch.",
-    "button": "Get launch updates"
+    "subtitle": "Choose your role, verify email with a code, and fill in your profile — the dashboard opens right away.",
+    "button": "Register"
   },
   "footer": {
     "tagline": "Valley of Knowledge — tutoring platform",

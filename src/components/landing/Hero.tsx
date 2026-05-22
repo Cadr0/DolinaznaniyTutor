@@ -1,5 +1,5 @@
 import { useTranslations } from "next-intl";
-import { HeroEmailForm } from "@/components/landing/HeroEmailForm";
+import { RoleChoice } from "@/components/landing/RoleChoice";
 
 function HeroIllustration() {
   return (
@@ -54,7 +54,7 @@ export function Hero() {
             {t("subtitle")}
           </p>
 
-          <HeroEmailForm />
+          <RoleChoice />
 
           <ul className="mt-8 flex flex-col gap-2 text-sm text-[var(--muted)] sm:flex-row sm:gap-6">
             {[t("trustFree"), t("trustMobile"), t("trustSecure")].map(

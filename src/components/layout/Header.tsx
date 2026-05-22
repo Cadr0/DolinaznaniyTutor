@@ -43,13 +43,13 @@ export function Header() {
         <div className="ml-auto flex items-center gap-2 sm:gap-3">
           <LanguageSwitcher />
           <ButtonLink
-            href="/"
+            href="/login"
             variant="ghost"
             className="hidden px-4 sm:inline-flex"
           >
             {t("login")}
           </ButtonLink>
-          <ButtonLink href="/" className="px-5 sm:px-6">
+          <ButtonLink href="/register" className="px-5 sm:px-6">
             {t("start")}
           </ButtonLink>
         </div>
