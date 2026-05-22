@@ -37,6 +37,8 @@ jobs:
             COMMIT=$(git rev-parse --short HEAD)
             COMMIT_FULL=$(git rev-parse HEAD)
             DEPLOYED_AT=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
+            export GIT_COMMIT="${COMMIT}"
+            export GIT_COMMIT_FULL="${COMMIT_FULL}"
 
             if [ ! -f .env ]; then
               echo "ERROR: .env not found. Run scripts/fix-server-env.sh on server first."
@@ -50,16 +52,11 @@ jobs:
               pg_dump -U dolinaznaniy dolinaznaniy \
               > "$BACKUP_DIR/pre-${COMMIT}-$(date +%Y%m%d-%H%M%S).sql" 2>/dev/null || true
 
-            echo "==> Build app (commit ${COMMIT})..."
-            export GIT_COMMIT="${COMMIT}"
-            export GIT_COMMIT_FULL="${COMMIT_FULL}"
-            docker compose -f docker-compose.prod.yml build app
-
             echo "==> Migrate..."
             docker compose -f docker-compose.prod.yml run --rm migrate
 
             echo "==> Start services..."
-            docker compose -f docker-compose.prod.yml up -d
+            docker compose -f docker-compose.prod.yml up -d --build --remove-orphans
 
             mkdir -p .deploy
             printf '{"commit":"%s","commitFull":"%s","deployedAt":"%s","branch":"main"}\n' \
