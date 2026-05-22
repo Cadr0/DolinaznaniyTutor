@@ -18,10 +18,15 @@ fi
 echo "==> Репозиторий..."
 mkdir -p "$APP_DIR"
 if [ ! -d "$APP_DIR/.git" ]; then
-  git clone "$REPO" "$APP_DIR"
+  if [ -z "$(ls -A "$APP_DIR" 2>/dev/null)" ]; then
+    git clone "$REPO" "$APP_DIR"
+  else
+    echo "Каталог $APP_DIR уже содержит файлы — пропуск clone"
+  fi
 else
   cd "$APP_DIR" && git fetch origin main && git reset --hard origin/main
 fi
+cd "$APP_DIR"
 
 echo "==> .env..."
 if [ ! -f "$APP_DIR/.env" ]; then

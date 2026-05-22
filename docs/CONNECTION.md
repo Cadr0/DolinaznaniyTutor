@@ -34,14 +34,16 @@ $env:SELECTEL_TOKEN = "ваш_ключ"
 .\scripts\selectel-api.ps1 -Action projects
 ```
 
+## Переменные на сервере (`/opt/dolinaznaniy/.env`)
+
+Смотреть на сервере: `ssh root@111.88.118.35 "cat /opt/dolinaznaniy/.env"`
+
+| Переменная | Назначение |
+|------------|------------|
+| `POSTGRES_PASSWORD` | пароль PostgreSQL |
+| `AUTH_SECRET` | секрет для auth (будущий этап) |
+| `NEXT_PUBLIC_APP_URL` | `http://111.88.118.35` |
+
 ## GitHub Secrets (для CI/CD)
 
-В репозитории: **Settings → Secrets and variables → Actions**
-
-| Secret | Описание |
-|--------|----------|
-| `VDS_HOST` | `111.88.118.35` |
-| `VDS_USER` | `root` |
-| `VDS_PASSWORD` | пароль root |
-| `POSTGRES_PASSWORD` | пароль БД на сервере |
-| `AUTH_SECRET` | случайная строка 32+ символов |
+См. [docs/GITHUB_SETUP.md](GITHUB_SETUP.md)
