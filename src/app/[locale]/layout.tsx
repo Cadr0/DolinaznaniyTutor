@@ -54,7 +54,7 @@ export default async function LocaleLayout({ children, params }: Props) {
   const messages = await getMessages();
 
   return (
-    <html lang={locale} className={`${fraunces.variable} ${nunito.variable}`}>
+    <html lang={locale} className={`${lora.variable} ${nunito.variable}`}>
       <body className="flex min-h-dvh flex-col antialiased">
         <NextIntlClientProvider messages={messages}>
           <Header />
