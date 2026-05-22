@@ -4,20 +4,64 @@ import { localePath } from "@/lib/routes";
 
 export const ROOM_INVITE_COOKIE = "room_invite_slug";
 
-export function buildRoomInviteUrl(slug: string) {
-  const base = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
-  return `${base}/invite/${slug}`;
+export function createRoomSlug() {
+  const suffix = Math.random().toString(36).slice(2, 10);
+  return `room-${suffix}`;
 }
 
-export function createRoomSlug(title: string) {
-  const normalized = title
-    .trim()
-    .toLowerCase()
-    .replace(/[^a-z0-9\u0400-\u04FF]+/gi, "-")
-    .replace(/^-+|-+$/g, "")
-    .slice(0, 32);
-  const suffix = Math.random().toString(36).slice(2, 8);
-  return `${normalized || "room"}-${suffix}`;
+export function isAsciiInviteSlug(slug: string) {
+  return /^[a-z0-9-]+$/.test(slug);
+}
+
+export function normalizeInviteSlug(raw: string) {
+  try {
+    return decodeURIComponent(raw).trim();
+  } catch {
+    return raw.trim();
+  }
+}
+
+export async function findRoomByInviteSlug(rawSlug: string) {
+  const slug = normalizeInviteSlug(rawSlug);
+
+  const direct = await prisma.room.findUnique({
+    where: { slug },
+    select: { id: true, title: true, slug: true },
+  });
+
+  if (direct) {
+    return direct;
+  }
+
+  const rooms = await prisma.room.findMany({
+    select: { id: true, title: true, slug: true },
+  });
+
+  return (
+    rooms.find((room) => normalizeInviteSlug(room.slug) === slug) ??
+    rooms.find((room) => room.slug.endsWith(slug.split("-").pop() ?? "")) ??
+    null
+  );
+}
+
+export async function ensureAsciiRoomSlug(roomId: string, currentSlug: string) {
+  if (isAsciiInviteSlug(currentSlug)) {
+    return currentSlug;
+  }
+
+  const nextSlug = createRoomSlug();
+
+  await prisma.room.update({
+    where: { id: roomId },
+    data: { slug: nextSlug },
+  });
+
+  return nextSlug;
+}
+
+export function buildRoomInviteUrl(slug: string) {
+  const base = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
+  return `${base}/invite/${encodeURIComponent(slug)}`;
 }
 
 export async function setPendingRoomInvite(slug: string) {
@@ -41,9 +85,7 @@ export async function clearPendingRoomInvite() {
 }
 
 export async function joinRoomBySlug(userId: string, slug: string) {
-  const room = await prisma.room.findUnique({
-    where: { slug },
-  });
+  const room = await findRoomByInviteSlug(slug);
 
   if (!room) {
     return null;
@@ -165,4 +207,50 @@ export async function publishAssignment(assignmentId: string, tutorId: string) {
       });
     }
   });
+}
+
+export type TeacherStudent = {
+  id: string;
+  name: string;
+  email: string;
+  roomTitle: string;
+  roomId: string;
+};
+
+export async function getTeacherStudents(ownerId: string): Promise<TeacherStudent[]> {
+  const rooms = await prisma.room.findMany({
+    where: { ownerId },
+    include: {
+      members: {
+        where: { role: "STUDENT" },
+        include: {
+          user: {
+            select: {
+              id: true,
+              name: true,
+              email: true,
+              profile: { select: { displayName: true } },
+            },
+          },
+        },
+      },
+    },
+    orderBy: { title: "asc" },
+  });
+
+  const students: TeacherStudent[] = [];
+
+  for (const room of rooms) {
+    for (const member of room.members) {
+      students.push({
+        id: member.user.id,
+        name: member.user.profile?.displayName ?? member.user.name,
+        email: member.user.email,
+        roomTitle: room.title,
+        roomId: room.id,
+      });
+    }
+  }
+
+  return students;
 }

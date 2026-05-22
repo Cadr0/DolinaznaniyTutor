@@ -2,14 +2,8 @@ import { notFound } from "next/navigation";
 import { Link } from "@/i18n/navigation";
 import { setRequestLocale } from "next-intl/server";
 import { CopyInviteButton } from "@/components/rooms/CopyInviteButton";
-import {
-  createAssignment,
-  importMarketplaceTask,
-  publishAssignmentAction,
-  submitAssignment,
-} from "../actions";
-import { ensureMarketplaceSampleTasks, getPublicMarketplaceTasks } from "@/lib/marketplace";
-import { buildRoomInviteUrl, getRoomForUser } from "@/lib/rooms";
+import { createAssignment, publishAssignmentAction, submitAssignment } from "../actions";
+import { buildRoomInviteUrl, ensureAsciiRoomSlug, getRoomForUser } from "@/lib/rooms";
 import { requireSession } from "@/lib/session";
 
 type Props = {
@@ -29,17 +23,12 @@ export default async function RoomDetailPage({ params }: Props) {
   }
 
   const { room, isTutor, isStudent } = access;
-  const inviteUrl = buildRoomInviteUrl(room.slug);
+  const slug = isTutor ? await ensureAsciiRoomSlug(room.id, room.slug) : room.slug;
+  const inviteUrl = buildRoomInviteUrl(slug);
   const students = room.members.filter((member) => member.role === "STUDENT");
   const assignments = isTutor
     ? room.assignments
     : room.assignments.filter((assignment) => assignment.status === "PUBLISHED");
-  const marketplaceTasks = isTutor
-    ? await (async () => {
-        await ensureMarketplaceSampleTasks(session.user.id);
-        return getPublicMarketplaceTasks();
-      })()
-    : [];
 
   return (
     <section className="mx-auto max-w-6xl px-4 py-6 sm:px-6 sm:py-8">
@@ -106,9 +95,7 @@ export default async function RoomDetailPage({ params }: Props) {
             <div className="mt-6 space-y-4">
               {assignments.length === 0 ? (
                 <p className="text-sm text-[var(--muted)]">
-                  {isTutor
-                    ? "Добавьте своё задание или возьмите готовое из маркетплейса."
-                    : "Пока нет заданий."}
+                  {isTutor ? "Добавьте первое задание для учеников." : "Пока нет заданий."}
                 </p>
               ) : (
                 assignments.map((assignment) => {
@@ -174,7 +161,8 @@ export default async function RoomDetailPage({ params }: Props) {
                       {isTutor && assignment.status === "PUBLISHED" ? (
                         <div className="mt-4 border-t border-[var(--card-border)] pt-4">
                           <p className="text-sm font-semibold text-[var(--foreground-strong)]">
-                            Ответы учеников: {assignment.submissions.filter((s) => s.status === "SUBMITTED").length}
+                            Ответы учеников:{" "}
+                            {assignment.submissions.filter((s) => s.status === "SUBMITTED").length}
                           </p>
                         </div>
                       ) : null}
@@ -211,34 +199,6 @@ export default async function RoomDetailPage({ params }: Props) {
               </ul>
             )}
           </div>
-
-          {isTutor ? (
-            <div className="rounded-[2rem] border border-[var(--card-border)] bg-white p-5 shadow-[var(--shadow-card)]">
-              <h2 className="font-display text-xl text-[var(--foreground-strong)]">Маркетплейс</h2>
-              <p className="mt-2 text-sm text-[var(--muted)]">
-                Готовые задания, которые можно добавить в комнату.
-              </p>
-              <div className="mt-4 space-y-3">
-                {marketplaceTasks.map((task) => (
-                  <div
-                    key={task.id}
-                    className="rounded-[1.25rem] border border-[var(--card-border)] bg-[var(--background)] p-4"
-                  >
-                    <h3 className="font-semibold text-[var(--foreground-strong)]">{task.title}</h3>
-                    <p className="mt-1 text-xs text-[var(--muted)]">
-                      {task.subject ?? "Общее"} · {task.gradeLevel ?? "Любой уровень"}
-                    </p>
-                    <p className="mt-2 text-sm text-[var(--muted)]">{task.description}</p>
-                    <form action={importMarketplaceTask.bind(null, locale, room.id, task.id)}>
-                      <button className="mt-3 rounded-full border border-[var(--accent)] px-4 py-2 text-sm font-semibold text-[var(--accent)] hover:bg-[var(--accent-soft)]">
-                        Добавить в комнату
-                      </button>
-                    </form>
-                  </div>
-                ))}
-              </div>
-            </div>
-          ) : null}
         </aside>
       </div>
     </section>

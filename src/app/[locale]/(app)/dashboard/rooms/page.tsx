@@ -1,5 +1,7 @@
 import { Link } from "@/i18n/navigation";
 import { setRequestLocale } from "next-intl/server";
+import { RoomStudentsDrawer } from "@/components/rooms/RoomStudentsDrawer";
+import { getTeacherStudents } from "@/lib/rooms";
 import { createRoom } from "./actions";
 import { requireSession } from "@/lib/session";
 import { prisma } from "@/lib/prisma";
@@ -15,18 +17,21 @@ export default async function RoomsPage({ params }: Props) {
   const isTutor = session.user.role === "TUTOR";
 
   if (isTutor) {
-    const rooms = await prisma.room.findMany({
-      where: { ownerId: session.user.id },
-      include: {
-        members: {
-          where: { role: "STUDENT" },
+    const [rooms, students] = await Promise.all([
+      prisma.room.findMany({
+        where: { ownerId: session.user.id },
+        include: {
+          members: {
+            where: { role: "STUDENT" },
+          },
+          assignments: {
+            where: { status: "PUBLISHED" },
+          },
         },
-        assignments: {
-          where: { status: "PUBLISHED" },
-        },
-      },
-      orderBy: { createdAt: "desc" },
-    });
+        orderBy: { createdAt: "desc" },
+      }),
+      getTeacherStudents(session.user.id),
+    ]);
 
     return (
       <section className="mx-auto max-w-6xl px-4 py-6 sm:px-6 sm:py-8">
@@ -62,13 +67,16 @@ export default async function RoomsPage({ params }: Props) {
           </div>
 
           <div className="space-y-4">
-            <div>
-              <span className="rounded-full bg-[var(--accent-soft)] px-4 py-1.5 text-sm font-semibold text-[var(--accent)]">
-                Комнаты
-              </span>
-              <h2 className="mt-4 font-display text-3xl text-[var(--foreground-strong)]">
-                Мои учебные комнаты
-              </h2>
+            <div className="flex flex-wrap items-start justify-between gap-3">
+              <div>
+                <span className="rounded-full bg-[var(--accent-soft)] px-4 py-1.5 text-sm font-semibold text-[var(--accent)]">
+                  Комнаты
+                </span>
+                <h2 className="mt-4 font-display text-3xl text-[var(--foreground-strong)]">
+                  Мои учебные комнаты
+                </h2>
+              </div>
+              <RoomStudentsDrawer students={students} />
             </div>
 
             {rooms.length === 0 ? (

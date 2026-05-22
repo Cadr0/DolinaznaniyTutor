@@ -1,24 +1,23 @@
 import { setRequestLocale } from "next-intl/server";
 import { AuthForm } from "@/components/auth/AuthForm";
-import { prisma } from "@/lib/prisma";
+import { findRoomByInviteSlug, setPendingRoomInvite } from "@/lib/rooms";
 
 type Role = "STUDENT" | "TUTOR";
 type Props = {
   params: Promise<{ locale: string }>;
-  searchParams: Promise<{ role?: string; room?: string }>;
+  searchParams: Promise<{ role?: string; room?: string; invite?: string }>;
 };
 
 export default async function RegisterPage({ params, searchParams }: Props) {
   const { locale } = await params;
-  const { role, room: roomSlug } = await searchParams;
+  const { role, room: roomSlug, invite } = await searchParams;
   setRequestLocale(locale);
 
-  const inviteRoom = roomSlug
-    ? await prisma.room.findUnique({
-        where: { slug: roomSlug },
-        select: { slug: true, title: true },
-      })
-    : null;
+  const inviteRoom = roomSlug ? await findRoomByInviteSlug(roomSlug) : null;
+
+  if (inviteRoom) {
+    await setPendingRoomInvite(inviteRoom.slug);
+  }
 
   const initialRole: Role = inviteRoom
     ? "STUDENT"
@@ -30,9 +29,9 @@ export default async function RegisterPage({ params, searchParams }: Props) {
     <AuthForm
       mode="register"
       initialRole={initialRole}
-      inviteRoomSlug={inviteRoom?.slug}
-      inviteRoomTitle={inviteRoom?.title}
+      inviteRoomTitle={invite === "invalid" ? undefined : inviteRoom?.title}
       lockRole={Boolean(inviteRoom)}
+      inviteInvalid={invite === "invalid"}
     />
   );
 }

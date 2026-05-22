@@ -13,9 +13,9 @@ type Step = "credentials" | "code" | "reset";
 type AuthFormProps = {
   mode: Mode;
   initialRole?: Role;
-  inviteRoomSlug?: string;
   inviteRoomTitle?: string;
   lockRole?: boolean;
+  inviteInvalid?: boolean;
 };
 
 async function postAuth<T>(path: string, body: Record<string, unknown>) {
@@ -42,6 +42,7 @@ export function AuthForm({
   initialRole = "STUDENT",
   inviteRoomTitle,
   lockRole = false,
+  inviteInvalid = false,
 }: AuthFormProps) {
   const t = useTranslations("auth");
   const locale = useLocale();
@@ -201,6 +202,7 @@ export function AuthForm({
       subtitle={mode === "register" ? t("registerSubtitle") : t("loginSubtitle")}
       error={error}
       inviteRoomTitle={mode === "register" ? inviteRoomTitle : undefined}
+      inviteInvalid={mode === "register" ? inviteInvalid : false}
     >
       <form className="space-y-4" onSubmit={handleCredentialsSubmit}>
         {mode === "register" && !lockRole ? (
@@ -258,12 +260,14 @@ function AuthShell({
   subtitle,
   error,
   inviteRoomTitle,
+  inviteInvalid = false,
   children,
 }: {
   title: string;
   subtitle: string;
   error: string;
   inviteRoomTitle?: string;
+  inviteInvalid?: boolean;
   children: React.ReactNode;
 }) {
   return (
@@ -277,6 +281,11 @@ function AuthShell({
         </p>
         {error ? (
           <div className="mt-4 rounded-2xl bg-red-50 px-4 py-3 text-sm text-red-700">{error}</div>
+        ) : null}
+        {inviteInvalid ? (
+          <div className="mt-4 rounded-2xl bg-red-50 px-4 py-3 text-sm text-red-700">
+            Ссылка-приглашение недействительна. Попросите учителя отправить новую.
+          </div>
         ) : null}
         <div className="mt-6">{children}</div>
       </div>

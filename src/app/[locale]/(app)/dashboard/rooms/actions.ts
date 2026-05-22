@@ -2,7 +2,6 @@
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
-import { ensureMarketplaceSampleTasks } from "@/lib/marketplace";
 import { prisma } from "@/lib/prisma";
 import { localePath } from "@/lib/routes";
 import { createRoomSlug, publishAssignment } from "@/lib/rooms";
@@ -27,7 +26,7 @@ export async function createRoom(locale: string, formData: FormData) {
     throw new Error("Введите название комнаты");
   }
 
-  const slug = createRoomSlug(title);
+  const slug = createRoomSlug();
 
   const room = await prisma.room.create({
     data: {
@@ -89,44 +88,6 @@ export async function publishAssignmentAction(locale: string, assignmentId: stri
   if (assignment) {
     revalidateRoomPaths(locale, assignment.roomId);
   }
-}
-
-export async function importMarketplaceTask(
-  locale: string,
-  roomId: string,
-  taskId: string
-) {
-  const session = await requireSession(locale);
-
-  const room = await prisma.room.findFirst({
-    where: { id: roomId, ownerId: session.user.id },
-  });
-
-  if (!room) {
-    throw new Error("Комната не найдена");
-  }
-
-  await ensureMarketplaceSampleTasks(session.user.id);
-
-  const task = await prisma.marketplaceTask.findFirst({
-    where: { id: taskId, isPublic: true },
-  });
-
-  if (!task) {
-    throw new Error("Задание не найдено");
-  }
-
-  await prisma.assignment.create({
-    data: {
-      roomId,
-      title: task.title,
-      content: task.content,
-      status: "DRAFT",
-      sourceTaskId: task.id,
-    },
-  });
-
-  revalidateRoomPaths(locale, roomId);
 }
 
 export async function submitAssignment(
