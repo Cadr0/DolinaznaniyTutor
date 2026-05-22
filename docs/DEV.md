@@ -15,17 +15,19 @@ npm run db:push
 npm run dev
 ```
 
-→ http://localhost:3000
+→ [http://localhost:3000](http://localhost:3000)
 
 ## Команды
 
-| Команда | Действие |
-|---------|----------|
-| `npm run dev` | dev-сервер (Turbopack) |
-| `npm run build` | production-сборка |
-| `npm run db:push` | синхрон схемы Prisma → БД |
-| `npm run db:studio` | GUI для БД |
-| `npm run lint` | ESLint |
+
+| Команда             | Действие                  |
+| ------------------- | ------------------------- |
+| `npm run dev`       | dev-сервер (Turbopack)    |
+| `npm run build`     | production-сборка         |
+| `npm run db:push`   | синхрон схемы Prisma → БД |
+| `npm run db:studio` | GUI для БД                |
+| `npm run lint`      | ESLint                    |
+
 
 ## Изменение БД
 
@@ -46,3 +48,4 @@ npm run dev
 npm run build
 git push origin main   # → автодеплой
 ```
+

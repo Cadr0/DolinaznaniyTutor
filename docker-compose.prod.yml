@@ -19,12 +19,6 @@ services:
   app:
     image: ghcr.io/cadr0/dolinaznaniy-tutor:${IMAGE_TAG:-main}
     pull_policy: always
-    build:
-      context: .
-      dockerfile: Dockerfile
-      args:
-        GIT_COMMIT: ${GIT_COMMIT:-unknown}
-        GIT_COMMIT_FULL: ${GIT_COMMIT_FULL:-unknown}
     restart: unless-stopped
     depends_on:
       db:
@@ -43,15 +37,18 @@ services:
       NODE_ENV: production
     ports:
       - "127.0.0.1:3000:3000"
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1:3000/api/health >/dev/null 2>&1 || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 40s
     networks:
       - app
 
   migrate:
     image: ghcr.io/cadr0/dolinaznaniy-tutor-migrate:${IMAGE_TAG:-main}
     pull_policy: always
-    build:
-      context: .
-      dockerfile: Dockerfile.migrate
     depends_on:
       db:
         condition: service_healthy

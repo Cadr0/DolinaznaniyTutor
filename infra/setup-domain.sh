@@ -11,7 +11,7 @@ echo "==> Проверка DNS..."
 RESOLVED=$(dig +short "$DOMAIN" A | head -1)
 if [ "$RESOLVED" != "$SERVER_IP" ]; then
   echo "ОШИБКА: $DOMAIN → $RESOLVED (ожидается $SERVER_IP)"
-  echo "Сначала смените A-запись в reg.ru — см. docs/DOMAIN.md"
+  echo "Сначала смените A-запись в reg.ru — см. docs/OPS.md"
   exit 1
 fi
 echo "DNS OK: $DOMAIN → $RESOLVED"

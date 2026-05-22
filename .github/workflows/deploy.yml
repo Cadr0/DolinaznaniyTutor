@@ -5,6 +5,10 @@ on:
     branches: [main]
   workflow_dispatch:
 
+concurrency:
+  group: deploy-production
+  cancel-in-progress: false
+
 env:
   REGISTRY: ghcr.io
   APP_IMAGE: ghcr.io/cadr0/dolinaznaniy-tutor
@@ -13,6 +17,7 @@ env:
 jobs:
   build:
     runs-on: ubuntu-latest
+    timeout-minutes: 25
     permissions:
       contents: read
       packages: write
@@ -63,6 +68,7 @@ jobs:
   deploy:
     needs: build
     runs-on: ubuntu-latest
+    timeout-minutes: 12
     steps:
       - name: Deploy via SSH
         uses: appleboy/ssh-action@v1.2.0
@@ -77,14 +83,33 @@ jobs:
           script_stop: true
           script: |
             set -e
+            if [ -z "${GHCR_TOKEN:-}" ]; then
+              echo "ERROR: GHCR_PAT secret is not set"
+              exit 1
+            fi
             if [ ! -d /opt/dolinaznaniy/.git ]; then
               apt-get update -qq
               apt-get install -y -qq git
               git clone https://github.com/Cadr0/DolinaznaniyTutor.git /opt/dolinaznaniy
             fi
             cd /opt/dolinaznaniy
-            git fetch origin main
-            git reset --hard origin/main
-            export IMAGE_TAG=main
+            export IMAGE_TAG=${{ github.sha }}
             export GHCR_USER=cadr0
             bash infra/deploy.sh
+
+      - name: Verify production health
+        run: |
+          set -e
+          for i in 1 2 3 4 5 6; do
+            HEALTH=$(curl -fsS --max-time 5 https://diary-ai.ru/api/health || true)
+            VERSION=$(curl -fsS --max-time 5 https://diary-ai.ru/api/version || true)
+            if echo "$HEALTH" | grep -q '"status":"ok"' && echo "$VERSION" | grep -q '"commitFull":"${{ github.sha }}"'; then
+              echo "Production is healthy and on expected commit."
+              exit 0
+            fi
+            sleep 10
+          done
+          echo "Production verification failed."
+          echo "Health: $HEALTH"
+          echo "Version: $VERSION"
+          exit 1

@@ -11,6 +11,7 @@ on:
 jobs:
   rollback:
     runs-on: ubuntu-latest
+    timeout-minutes: 12
     steps:
       - name: Rollback via SSH
         uses: appleboy/ssh-action@v1.2.0
@@ -25,6 +26,10 @@ jobs:
           script_stop: true
           script: |
             set -e
+            if [ -z "${GHCR_TOKEN:-}" ]; then
+              echo "ERROR: GHCR_PAT secret is not set"
+              exit 1
+            fi
             APP_DIR=/opt/dolinaznaniy
             TARGET="${{ github.event.inputs.commit }}"
             cd "$APP_DIR"
@@ -38,11 +43,27 @@ jobs:
             if [ -n "${GHCR_TOKEN:-}" ]; then
               echo "$GHCR_TOKEN" | docker login ghcr.io -u cadr0 --password-stdin
             fi
-            docker compose -f docker-compose.prod.yml pull app migrate 2>/dev/null || \
-              docker compose -f docker-compose.prod.yml build app migrate
-            docker compose -f docker-compose.prod.yml run --rm migrate || true
-            docker compose -f docker-compose.prod.yml up -d --remove-orphans
+            docker compose -f docker-compose.prod.yml pull app migrate
+            docker compose -f docker-compose.prod.yml run --rm migrate
+            docker compose -f docker-compose.prod.yml up -d --wait --remove-orphans
             mkdir -p .deploy
             printf '{"commit":"%s","commitFull":"%s","deployedAt":"%s","branch":"rollback","imageTag":"%s"}\n' \
               "$GIT_COMMIT" "$COMMIT_FULL" "$(date -u +%Y-%m-%dT%H:%M:%SZ)" "$IMAGE_TAG" > .deploy/deploy-info.json
             echo "Rolled back to ${GIT_COMMIT}"
+
+      - name: Verify production health after rollback
+        run: |
+          set -e
+          for i in 1 2 3 4 5 6; do
+            HEALTH=$(curl -fsS --max-time 5 https://diary-ai.ru/api/health || true)
+            VERSION=$(curl -fsS --max-time 5 https://diary-ai.ru/api/version || true)
+            if echo "$HEALTH" | grep -q '"status":"ok"' && echo "$VERSION" | grep -q '"commitFull":"'; then
+              echo "Production is healthy after rollback."
+              exit 0
+            fi
+            sleep 10
+          done
+          echo "Rollback verification failed."
+          echo "Health: $HEALTH"
+          echo "Version: $VERSION"
+          exit 1

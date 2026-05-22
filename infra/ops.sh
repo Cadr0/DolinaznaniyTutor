@@ -1,6 +1,6 @@
 #!/bin/bash
 # На сервере: bash infra/ops.sh <command>
-# status | logs [service] | health | backup | backups | rollback <commit> | db-shell
+# status | logs [service] | health | backup | backups | rollback <commit> | db-shell | domain | help
 set -euo pipefail
 
 APP_DIR="/opt/dolinaznaniy"
@@ -49,9 +49,9 @@ case "$cmd" in
     if [ -n "${GHCR_TOKEN:-}" ]; then
       echo "$GHCR_TOKEN" | docker login ghcr.io -u "${GHCR_USER:-cadr0}" --password-stdin
     fi
-    $COMPOSE pull app migrate 2>/dev/null || $COMPOSE build app migrate
-    $COMPOSE run --rm migrate || true
-    $COMPOSE up -d --remove-orphans
+    $COMPOSE pull app migrate
+    $COMPOSE run --rm migrate
+    $COMPOSE up -d --wait --remove-orphans
     mkdir -p .deploy
     printf '{"commit":"%s","commitFull":"%s","deployedAt":"%s","branch":"rollback-local"}\n' \
       "$GIT_COMMIT" "$GIT_COMMIT_FULL" "$(date -u +%Y-%m-%dT%H:%M:%SZ)" > .deploy/deploy-info.json
@@ -60,8 +60,20 @@ case "$cmd" in
   db-shell)
     $COMPOSE exec db psql -U dolinaznaniy -d dolinaznaniy
     ;;
+  domain|setup-domain)
+    bash infra/setup-domain.sh
+    ;;
+  help|-h|--help)
+    echo "Usage: infra/ops.sh {status|logs|health|backup|backups|rollback|db-shell|domain}"
+    echo ""
+    echo "Examples:"
+    echo "  bash infra/ops.sh status"
+    echo "  bash infra/ops.sh logs app"
+    echo "  bash infra/ops.sh rollback <commit>"
+    echo "  bash infra/ops.sh domain"
+    ;;
   *)
-    echo "Usage: infra/ops.sh {status|logs|health|backup|backups|rollback|db-shell}"
+    echo "Usage: infra/ops.sh {status|logs|health|backup|backups|rollback|db-shell|domain}"
     exit 1
     ;;
 esac

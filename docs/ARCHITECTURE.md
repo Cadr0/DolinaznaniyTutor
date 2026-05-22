@@ -2,16 +2,18 @@
 
 ## Стек
 
-| Слой | Технология |
-|------|------------|
-| i18n | next-intl (ru, en) |
-| UI | Tailwind 4, mobile-first — см. docs/DESIGN.md |
-| БД | PostgreSQL 16 |
-| ORM | Prisma |
-| Auth | Better Auth (этап 2) |
-| Контейнеры | Docker Compose |
-| CI/CD | GitHub Actions |
-| Прокси | nginx → :3000 |
+
+| Слой       | Технология                                    |
+| ---------- | --------------------------------------------- |
+| i18n       | next-intl (ru, en)                            |
+| UI         | Tailwind 4, mobile-first — см. docs/DESIGN.md |
+| БД         | PostgreSQL 16                                 |
+| ORM        | Prisma                                        |
+| Auth       | Better Auth (этап 2)                          |
+| Контейнеры | Docker Compose                                |
+| CI/CD      | GitHub Actions                                |
+| Прокси     | nginx → :3000                                 |
+
 
 Отдельный backend не используем — Server Components, Route Handlers, Server Actions.
 
@@ -49,10 +51,12 @@
 
 ## Маршруты API
 
-| Endpoint | Назначение |
-|----------|------------|
-| `GET /api/health` | статус app + БД |
-| `GET /api/version` | commit деплоя |
+
+| Endpoint           | Назначение      |
+| ------------------ | --------------- |
+| `GET /api/health`  | статус app + БД |
+| `GET /api/version` | commit деплоя   |
+
 
 ## Модель данных
 
@@ -69,3 +73,4 @@
 
 - Next.js `output: 'standalone'` → компактный Docker-образ
 - `GIT_COMMIT` передаётся при сборке → `/api/version`
+

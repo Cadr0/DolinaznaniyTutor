@@ -1,77 +1,124 @@
-# Операции
+# Операции (Prod, Deploy, Domain, Access)
 
-## Деплой
+## Быстрые ссылки
+
+- GitHub Actions: [https://github.com/Cadr0/DolinaznaniyTutor/actions](https://github.com/Cadr0/DolinaznaniyTutor/actions)
+- Repo secrets: [https://github.com/Cadr0/DolinaznaniyTutor/settings/secrets/actions](https://github.com/Cadr0/DolinaznaniyTutor/settings/secrets/actions)
+- Прод: [https://diary-ai.ru](https://diary-ai.ru)
+
+## Доступ и пути
+
+- SSH: `ssh root@111.88.118.35`
+- Код на сервере: `/opt/dolinaznaniy`
+- Секреты на сервере: `/opt/dolinaznaniy/.env`
+- Секреты локально (не в Git): `CONNECTION.local.md`
+
+```powershell
+$env:VDS_PASSWORD = "..."
+.\infra\remote-ops.ps1 status
+```
+
+## Основной деплой
 
 ```bash
 git push origin main
 ```
 
-**Как работает (быстро):**
-1. GitHub Actions **собирает** Docker-образ (~3 мин на мощном runner)
-2. Пушит в `ghcr.io/cadr0/dolinaznaniy-tutor:main`
-3. Сервер **скачивает** образ и перезапускает (~1 мин)
+Пайплайн:
+1. GitHub Actions собирает и пушит образы в GHCR.
+2. Сервер делает pull готовых образов.
+3. Миграции применяются в контейнере `migrate`.
+4. `app` перезапускается, `/api/health` и `/api/version` должны отвечать.
 
-**Раньше было медленно**, потому что Next.js собирался прямо на VDS (5–20 мин, мало CPU/RAM).
-
-Actions: https://github.com/Cadr0/DolinaznaniyTutor/actions
-
-### Ручной деплой на сервере
+## Ручной деплой на сервере
 
 ```bash
 cd /opt/dolinaznaniy
-export GHCR_TOKEN="ваш_pat"
+export GHCR_TOKEN="your_pat"
 export GHCR_USER=cadr0
 bash infra/deploy.sh
 ```
 
-## Откат
+## Команды ops
 
-GitHub → **Rollback on VDS** → указать commit  
-или на сервере: `bash infra/ops.sh rollback <commit>`
+На сервере:
+```bash
+bash infra/ops.sh status
+bash infra/ops.sh health
+bash infra/ops.sh logs app
+bash infra/ops.sh backup
+bash infra/ops.sh db-shell
+bash infra/ops.sh domain
+```
 
-## Мониторинг с ПК
-
+С Windows:
 ```powershell
 $env:VDS_PASSWORD = "..."
+.\infra\remote-ops.ps1 init-ssh-key   # один раз на новом ПК
 .\infra\remote-ops.ps1 status
 .\infra\remote-ops.ps1 health
 .\infra\remote-ops.ps1 logs app
 .\infra\remote-ops.ps1 backup
+.\infra\remote-ops.ps1 domain
 ```
 
-## БД (Adminer)
+## Домен и HTTPS
 
-```powershell
-ssh -L 8080:127.0.0.1:8080 root@111.88.118.35
-# http://localhost:8080  Server=db  User=dolinaznaniy
-```
-
-Консоль: `bash infra/ops.sh db-shell`
-
-## Бэкапы
-
-Авто перед деплоем → `/opt/dolinaznaniy-backups/`  
-Ручной: `bash infra/ops.sh backup`
-
-## Пути на сервере
-
-| Путь | Назначение |
-|------|------------|
-| `/opt/dolinaznaniy` | код |
-| `/opt/dolinaznaniy/.env` | секреты |
-| `/opt/dolinaznaniy/.deploy/deploy-info.json` | текущий commit |
-
-## Docker
+- Домен: `diary-ai.ru`
+- A-записи: `@` и `www` -> `111.88.118.35`
+- HTTPS настраивается скриптом:
 
 ```bash
 cd /opt/dolinaznaniy
-docker compose -f docker-compose.prod.yml ps
-docker compose -f docker-compose.prod.yml logs -f app
+bash infra/setup-domain.sh
 ```
 
-## Если деплой упал
+Проверка:
+```bash
+curl -I https://diary-ai.ru
+curl -s https://diary-ai.ru/api/health
+curl -s https://diary-ai.ru/api/version
+```
 
-1. Actions → Deploy to VDS → лог job **build** (ошибка сборки)
-2. Actions → Deploy to VDS → лог job **deploy** (SSH / pull)
-3. На сервере: `bash infra/ops.sh logs app`
-4. Проверить secret `GHCR_PAT` — без него pull не работает
+## GitHub Secrets (обязательные)
+
+| Secret              | Значение                      |
+| ------------------- | ----------------------------- |
+| `VDS_HOST`          | `111.88.118.35`              |
+| `VDS_USER`          | `root`                        |
+| `VDS_PASSWORD`      | пароль root SSH               |
+| `GHCR_PAT`          | token с правом `read:packages` |
+| `POSTGRES_PASSWORD` | из `/opt/dolinaznaniy/.env`  |
+| `AUTH_SECRET`       | из `/opt/dolinaznaniy/.env`  |
+
+`GHCR_PAT` обязателен: без него сервер не сможет скачать готовый образ и начнет локальную сборку.
+
+## Откат
+
+- GitHub: `Rollback on VDS` -> commit hash
+- Сервер: `bash infra/ops.sh rollback <commit>`
+
+## База данных и бэкапы
+
+- Auto backup перед деплоем: `/opt/dolinaznaniy-backups/`
+- Ручной backup: `bash infra/ops.sh backup`
+- SQL shell: `bash infra/ops.sh db-shell`
+- Adminer tunnel:
+
+```bash
+ssh -L 8080:127.0.0.1:8080 root@111.88.118.35
+```
+
+Далее: `http://localhost:8080` (`Server=db`, `User=dolinaznaniy`).
+
+## Диагностика проблем
+
+1. Проверить workflow `Deploy to VDS`:
+   - job `build` (сборка/публикация образов)
+   - job `deploy` (SSH/запуск deploy.sh)
+2. На сервере: `bash infra/ops.sh status`
+3. Логи приложения: `bash infra/ops.sh logs app`
+4. Проверка API:
+   - `curl -s http://127.0.0.1:3000/api/health`
+   - `curl -s http://127.0.0.1:3000/api/version`
+
