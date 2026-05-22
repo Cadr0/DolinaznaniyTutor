@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
     inputs:
       commit:
-        description: "Git commit (short or full), e.g. 8297575"
+        description: "Git commit (short or full), e.g. a5ba6ab"
         required: true
         type: string
 
@@ -14,10 +14,14 @@ jobs:
     steps:
       - name: Rollback via SSH
         uses: appleboy/ssh-action@v1.2.0
+        env:
+          GHCR_TOKEN: ${{ secrets.GHCR_PAT }}
         with:
           host: ${{ secrets.VDS_HOST }}
           username: ${{ secrets.VDS_USER }}
           password: ${{ secrets.VDS_PASSWORD }}
+          command_timeout: 10m
+          envs: GHCR_TOKEN
           script_stop: true
           script: |
             set -e
@@ -26,13 +30,19 @@ jobs:
             cd "$APP_DIR"
             git fetch origin main
             git checkout "$TARGET"
-            COMMIT=$(git rev-parse --short HEAD)
-            export GIT_COMMIT="${COMMIT}"
-            export GIT_COMMIT_FULL=$(git rev-parse HEAD)
-            docker compose -f docker-compose.prod.yml build app
+            COMMIT_FULL=$(git rev-parse HEAD)
+            export IMAGE_TAG="$COMMIT_FULL"
+            export GHCR_USER=cadr0
+            export GIT_COMMIT=$(git rev-parse --short HEAD)
+            export GIT_COMMIT_FULL="$COMMIT_FULL"
+            if [ -n "${GHCR_TOKEN:-}" ]; then
+              echo "$GHCR_TOKEN" | docker login ghcr.io -u cadr0 --password-stdin
+            fi
+            docker compose -f docker-compose.prod.yml pull app migrate 2>/dev/null || \
+              docker compose -f docker-compose.prod.yml build app migrate
             docker compose -f docker-compose.prod.yml run --rm migrate || true
-            docker compose -f docker-compose.prod.yml up -d
+            docker compose -f docker-compose.prod.yml up -d --remove-orphans
             mkdir -p .deploy
-            printf '{"commit":"%s","commitFull":"%s","deployedAt":"%s","branch":"rollback","rolledBackTo":"%s"}\n' \
-              "$COMMIT" "$(git rev-parse HEAD)" "$(date -u +%Y-%m-%dT%H:%M:%SZ)" "$TARGET" > .deploy/deploy-info.json
-            echo "Rolled back to ${COMMIT}"
+            printf '{"commit":"%s","commitFull":"%s","deployedAt":"%s","branch":"rollback","imageTag":"%s"}\n' \
+              "$GIT_COMMIT" "$COMMIT_FULL" "$(date -u +%Y-%m-%dT%H:%M:%SZ)" "$IMAGE_TAG" > .deploy/deploy-info.json
+            echo "Rolled back to ${GIT_COMMIT}"

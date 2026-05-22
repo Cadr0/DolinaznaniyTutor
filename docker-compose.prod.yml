@@ -17,6 +17,8 @@ services:
       - app
 
   app:
+    image: ghcr.io/cadr0/dolinaznaniy-tutor:${IMAGE_TAG:-main}
+    pull_policy: always
     build:
       context: .
       dockerfile: Dockerfile
@@ -45,6 +47,8 @@ services:
       - app
 
   migrate:
+    image: ghcr.io/cadr0/dolinaznaniy-tutor-migrate:${IMAGE_TAG:-main}
+    pull_policy: always
     build:
       context: .
       dockerfile: Dockerfile.migrate
@@ -55,8 +59,6 @@ services:
       DATABASE_URL: postgresql://dolinaznaniy:${POSTGRES_PASSWORD}@db:5432/dolinaznaniy?schema=public
     networks:
       - app
-    profiles:
-      - tools
 
   adminer:
     image: adminer:4

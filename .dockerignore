@@ -1,0 +1,14 @@
+.git
+.github
+.cursor
+docs
+*.md
+.env
+.env.*
+CONNECTION.local.md
+node_modules
+.next
+.deploy
+infra/*.ps1
+**/*.log
+**/.DS_Store

@@ -45,8 +45,13 @@ case "$cmd" in
     git checkout "$target"
     export GIT_COMMIT=$(git rev-parse --short HEAD)
     export GIT_COMMIT_FULL=$(git rev-parse HEAD)
-    $COMPOSE up -d --build --remove-orphans
+    export IMAGE_TAG="$GIT_COMMIT_FULL"
+    if [ -n "${GHCR_TOKEN:-}" ]; then
+      echo "$GHCR_TOKEN" | docker login ghcr.io -u "${GHCR_USER:-cadr0}" --password-stdin
+    fi
+    $COMPOSE pull app migrate 2>/dev/null || $COMPOSE build app migrate
     $COMPOSE run --rm migrate || true
+    $COMPOSE up -d --remove-orphans
     mkdir -p .deploy
     printf '{"commit":"%s","commitFull":"%s","deployedAt":"%s","branch":"rollback-local"}\n' \
       "$GIT_COMMIT" "$GIT_COMMIT_FULL" "$(date -u +%Y-%m-%dT%H:%M:%SZ)" > .deploy/deploy-info.json
