@@ -1,41 +1,22 @@
 # Dependencies
 node_modules/
-.pnp
-.pnp.js
-
-# Build
 .next/
 out/
-build/
-dist/
 
 # Env & secrets
 .env
 .env.*
 !.env.example
 CONNECTION.local.md
+.deploy/
 
-# Debug
-npm-debug.log*
-.DS_Store
-*.pem
-
-# Prisma
-prisma/*.db
-prisma/*.db-journal
-
-# IDE
+# IDE / OS
 .idea/
 .vscode/
-*.swp
+.DS_Store
 
-# Docker
+# Prisma local
+prisma/*.db
+
+# Docker volumes (local)
 postgres_data/
-
-# Old deploy keys
-deploy/
-*_deploy
-*_deploy.pub
-
-# Legacy
-site/

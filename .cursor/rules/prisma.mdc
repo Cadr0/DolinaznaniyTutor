@@ -1,0 +1,15 @@
+---
+description: Prisma and database schema rules
+globs: prisma/**/*
+alwaysApply: false
+---
+
+# Prisma
+
+- Schema: `prisma/schema.prisma` — edit here, nowhere else
+- Client: import from `@/lib/prisma` (singleton)
+- Dev sync: `npm run db:push`
+- Prod: migrate container in `docker-compose.prod.yml`
+- New models: follow existing enums (UserRole, AssignmentStatus…)
+- Relations: always define both sides + onDelete where needed
+- After schema change: update docs/PRODUCT.md if entities change

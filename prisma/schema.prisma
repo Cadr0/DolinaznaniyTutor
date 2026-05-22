@@ -1,3 +1,6 @@
+// Схема БД «Долина знаний». Документация: docs/PRODUCT.md, docs/ARCHITECTURE.md
+// После изменений: npm run db:push (dev)
+
 generator client {
   provider = "prisma-client-js"
 }

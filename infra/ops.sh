@@ -1,6 +1,6 @@
 #!/bin/bash
-# Операции на сервере: bash scripts/ops.sh <command>
-# Команды: status | logs | health | backup | backups | rollback <commit> | db-shell
+# На сервере: bash infra/ops.sh <command>
+# status | logs [service] | health | backup | backups | rollback <commit> | db-shell
 set -euo pipefail
 
 APP_DIR="/opt/dolinaznaniy"
@@ -45,9 +45,8 @@ case "$cmd" in
     git checkout "$target"
     export GIT_COMMIT=$(git rev-parse --short HEAD)
     export GIT_COMMIT_FULL=$(git rev-parse HEAD)
-    $COMPOSE build app
+    $COMPOSE up -d --build --remove-orphans
     $COMPOSE run --rm migrate || true
-    $COMPOSE up -d
     mkdir -p .deploy
     printf '{"commit":"%s","commitFull":"%s","deployedAt":"%s","branch":"rollback-local"}\n' \
       "$GIT_COMMIT" "$GIT_COMMIT_FULL" "$(date -u +%Y-%m-%dT%H:%M:%SZ)" > .deploy/deploy-info.json
@@ -57,7 +56,7 @@ case "$cmd" in
     $COMPOSE exec db psql -U dolinaznaniy -d dolinaznaniy
     ;;
   *)
-    echo "Usage: ops.sh {status|logs|health|backup|backups|rollback|db-shell}"
+    echo "Usage: infra/ops.sh {status|logs|health|backup|backups|rollback|db-shell}"
     exit 1
     ;;
 esac

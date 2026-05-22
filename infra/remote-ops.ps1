@@ -1,14 +1,7 @@
-# Удалённые операции на VDS с вашего ПК
-# $env:VDS_PASSWORD = "пароль"
-# .\scripts\remote-ops.ps1 status
-# .\scripts\remote-ops.ps1 logs app
-# .\scripts\remote-ops.ps1 backup
-
+# С Windows: .\infra\remote-ops.ps1 status
 param(
-  [Parameter(Position = 0)]
-  [string]$Command = "status",
-  [Parameter(Position = 1)]
-  [string]$Arg = ""
+  [Parameter(Position = 0)][string]$Command = "status",
+  [Parameter(Position = 1)][string]$Arg = ""
 )
 
 $Server = "111.88.118.35"
@@ -22,7 +15,7 @@ if (-not $Password) {
   exit 1
 }
 
-$remote = "cd /opt/dolinaznaniy && bash scripts/ops.sh $Command"
+$remote = "cd /opt/dolinaznaniy && bash infra/ops.sh $Command"
 if ($Arg) { $remote += " $Arg" }
 
 & $plink -ssh "${User}@${Server}" -pw $Password -hostkey $HostKey -batch $remote

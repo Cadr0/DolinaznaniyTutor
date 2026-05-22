@@ -41,7 +41,7 @@ jobs:
             export GIT_COMMIT_FULL="${COMMIT_FULL}"
 
             if [ ! -f .env ]; then
-              echo "ERROR: .env not found. Run scripts/fix-server-env.sh on server first."
+              echo "ERROR: .env not found. Run infra/fix-server-env.sh on server first."
               exit 1
             fi
 

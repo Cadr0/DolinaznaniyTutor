@@ -1,0 +1,15 @@
+---
+description: Next.js App Router conventions
+globs: src/**/*
+alwaysApply: false
+---
+
+# Next.js
+
+- Routes: `src/app/<path>/page.tsx`
+- API: `src/app/api/<name>/route.ts` — export GET/POST handlers
+- Shared code: `src/lib/` — import as `@/lib/...`
+- Default: Server Components. Add `"use client"` only for hooks/events/browser APIs
+- Styles: Tailwind in component, globals in `src/app/globals.css`
+- Metadata: `layout.tsx` or per-page `export const metadata`
+- No Pages Router (`pages/`, getServerSideProps)

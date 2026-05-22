@@ -1,20 +1,13 @@
-# GitHub Actions — секреты для автодеплоя
+# GitHub Secrets
 
-Репозиторий: https://github.com/Cadr0/DolinaznaniyTutor/settings/secrets/actions
+https://github.com/Cadr0/DolinaznaniyTutor/settings/secrets/actions
 
-Добавьте secrets:
-
-| Name | Value |
-|------|-------|
+| Secret | Значение |
+|--------|----------|
 | `VDS_HOST` | `111.88.118.35` |
 | `VDS_USER` | `root` |
-| `VDS_PASSWORD` | пароль root SSH |
-| `POSTGRES_PASSWORD` | см. `/opt/dolinaznaniy/.env` на сервере |
-| `AUTH_SECRET` | см. `/opt/dolinaznaniy/.env` на сервере |
+| `VDS_PASSWORD` | пароль SSH |
+| `POSTGRES_PASSWORD` | из `/opt/dolinaznaniy/.env` |
+| `AUTH_SECRET` | из `/opt/dolinaznaniy/.env` |
 
-После добавления secrets: push в `main` → Actions → Deploy to VDS.
-
-Посмотреть `.env` на сервере:
-```bash
-ssh root@111.88.118.35 "cat /opt/dolinaznaniy/.env"
-```
+Push `main` → Deploy · Rollback → workflow **Rollback on VDS**

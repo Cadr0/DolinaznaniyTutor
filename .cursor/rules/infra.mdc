@@ -1,0 +1,16 @@
+---
+description: Infrastructure, Docker, CI/CD, server scripts
+globs: infra/**/*,.github/**/*,Dockerfile*,docker-compose*
+alwaysApply: false
+---
+
+# Infrastructure
+
+- Server scripts: `infra/` only (ops.sh, server-bootstrap.sh)
+- Prod compose: `docker-compose.prod.yml` — app + db + adminer + migrate
+- Dev compose: `docker-compose.yml` — postgres only
+- Deploy: `.github/workflows/deploy.yml` — push main
+- Rollback: `.github/workflows/rollback.yml` — manual dispatch
+- Server path: `/opt/dolinaznaniy`, env: `/opt/dolinaznaniy/.env`
+- Shell scripts: LF line endings (Unix)
+- Do not put app business logic in infra/

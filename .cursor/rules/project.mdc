@@ -1,0 +1,23 @@
+---
+description: Core project context for Dolinaznaniy Tutor — read AGENTS.md chain
+alwaysApply: true
+---
+
+# Dolinaznaniy Tutor
+
+Product: tutoring platform (rooms, assignments, marketplace). Repo: Cadr0/DolinaznaniyTutor.
+
+**Before coding:** read `docs/ROADMAP.md` for current phase.
+
+**Structure:**
+- `src/app/` — pages + API only
+- `src/lib/` — shared modules
+- `prisma/schema.prisma` — single source of truth for DB
+- `infra/` — deploy/server scripts, not app logic
+- `docs/` — all documentation
+
+**Do not:** add separate backend, duplicate docs in root, put secrets in git, create files in obsolete `scripts/` or `site/`.
+
+**Deploy:** push to `main` → GitHub Actions. Secrets in `CONNECTION.local.md` (local only).
+
+**Current phase:** Stage 2 — Auth (Better Auth, roles TUTOR/STUDENT).
