@@ -28,4 +28,5 @@ old bd/uploads/
 # Tests
 test-results/
 playwright-report/
+e2e/.auth/
 tsconfig.tsbuildinfo

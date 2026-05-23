@@ -208,7 +208,24 @@
       "statusSkipped": "Пропущено",
       "statusSubmitted": "Отправлено",
       "statusPending": "В процессе",
-      "myHomeworkInRoom": "Мои задания"
+      "myHomeworkInRoom": "Мои задания",
+      "progressLink": "Прогресс →",
+      "genericError": "Не удалось выполнить действие. Попробуйте ещё раз.",
+      "uploadFailed": "Не удалось загрузить файл",
+      "imageSubmitHint": "Загрузите фото ответа и нажмите «Проверить»",
+      "uploadPhotoHint": "или нажмите для выбора · JPG, PNG, WebP до 5 МБ",
+      "noAssignmentsYet": "Назначений пока нет.",
+      "noTopicsInRoom": "В комнате пока нет тем с заданиями.",
+      "topicLabel": "Тема",
+      "tasksLabel": "Задания",
+      "cancel": "Отмена",
+      "confirm": "Подтвердить",
+      "selectAtLeastOneTask": "Выберите хотя бы одно задание",
+      "revokeConfirm": "Снять назначение?",
+      "hintUsed": "подсказка",
+      "progressPageEyebrow": "Прогресс",
+      "progressPageTitle": "Ваш прогресс",
+      "topicsCount": "Тем"
     }
   },
   "lang": {

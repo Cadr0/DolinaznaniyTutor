@@ -2,7 +2,6 @@
 
 import { useCallback, useEffect, useMemo, useState, useTransition } from "react";
 import { useTranslations } from "next-intl";
-import { useRouter } from "@/i18n/navigation";
 import {
   revealTaskHintAction,
   skipTaskAction,
@@ -25,11 +24,11 @@ type Feedback = "correct" | "incorrect" | "submitted" | null;
 
 export function TaskPlayer({ locale, assignment, initialTaskId, task }: TaskPlayerProps) {
   const t = useTranslations("app.homeworkPage");
-  const router = useRouter();
   const [pending, startTransition] = useTransition();
 
   const taskId = initialTaskId;
   const currentTask = task;
+  const [completedCount, setCompletedCount] = useState(assignment.completedTasks);
   const [answerText, setAnswerText] = useState("");
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [imageUrl, setImageUrl] = useState<string | null>(null);
@@ -45,8 +44,12 @@ export function TaskPlayer({ locale, assignment, initialTaskId, task }: TaskPlay
 
   const progressPercent =
     assignment.totalTasks > 0
-      ? Math.round((assignment.completedTasks / assignment.totalTasks) * 100)
+      ? Math.round((completedCount / assignment.totalTasks) * 100)
       : 0;
+
+  useEffect(() => {
+    setCompletedCount(assignment.completedTasks);
+  }, [assignment.completedTasks, taskId]);
 
   const isMultiChoice = currentTask.choiceSelectionMode === "multiple";
 
@@ -64,12 +67,17 @@ export function TaskPlayer({ locale, assignment, initialTaskId, task }: TaskPlay
   }, [taskId, resetForm]);
 
   function goToNext(nextTaskId: string | null, completed: boolean) {
+    const prefix = locale === "en" ? "/en" : "/ru";
     if (completed || !nextTaskId) {
-      router.replace("/dashboard/homework");
-    } else {
-      router.replace(`/dashboard/homework/${assignment.id}?task=${nextTaskId}`);
+      window.location.assign(`${prefix}/dashboard/homework`);
+      return;
     }
-    router.refresh();
+    window.location.assign(`${prefix}/dashboard/homework/${assignment.id}?task=${nextTaskId}`);
+  }
+
+  function advanceAfterTask(result: { nextTaskId: string | null; completed: boolean }) {
+    setCompletedCount((count) => Math.min(count + 1, assignment.totalTasks));
+    goToNext(result.nextTaskId, result.completed);
   }
 
   async function handleUpload(file: File) {
@@ -81,11 +89,11 @@ export function TaskPlayer({ locale, assignment, initialTaskId, task }: TaskPlay
       const response = await fetch("/api/uploads/task-image", { method: "POST", body: formData });
       const payload = (await response.json()) as { url?: string; error?: string };
       if (!response.ok || !payload.url) {
-        throw new Error(payload.error ?? "Upload failed");
+        throw new Error(payload.error ?? t("uploadFailed"));
       }
       setImageUrl(payload.url);
     } catch (uploadError) {
-      setError(uploadError instanceof Error ? uploadError.message : "Upload failed");
+      setError(uploadError instanceof Error ? uploadError.message : t("uploadFailed"));
       throw uploadError;
     } finally {
       setUploading(false);
@@ -118,9 +126,9 @@ export function TaskPlayer({ locale, assignment, initialTaskId, task }: TaskPlay
           return;
         }
 
-        goToNext(result.nextTaskId, result.completed);
+        advanceAfterTask(result);
       } catch (submitError) {
-        setError(submitError instanceof Error ? submitError.message : "Error");
+        setError(submitError instanceof Error ? submitError.message : t("genericError"));
       }
     });
   }
@@ -129,9 +137,9 @@ export function TaskPlayer({ locale, assignment, initialTaskId, task }: TaskPlay
     startTransition(async () => {
       try {
         const result = await revealTaskHintAction(locale, assignment.id, taskId);
-        setHintRevealed(result.hint ?? t("hintEmpty"));
+        setHintRevealed(result.hint?.trim() ? result.hint : t("hintEmpty"));
       } catch (hintError) {
-        setError(hintError instanceof Error ? hintError.message : "Error");
+        setError(hintError instanceof Error ? hintError.message : t("genericError"));
       }
     });
   }
@@ -141,9 +149,9 @@ export function TaskPlayer({ locale, assignment, initialTaskId, task }: TaskPlay
       setError("");
       try {
         const result = await skipTaskAction(locale, assignment.id, taskId);
-        goToNext(result.nextTaskId, result.completed);
+        advanceAfterTask(result);
       } catch (skipError) {
-        setError(skipError instanceof Error ? skipError.message : "Error");
+        setError(skipError instanceof Error ? skipError.message : t("genericError"));
       }
     });
   }
@@ -200,12 +208,17 @@ export function TaskPlayer({ locale, assignment, initialTaskId, task }: TaskPlay
 
           {currentTask.answerType === "IMAGE" ? (
             <div className="mt-3">
+              <p className="mb-2 text-sm text-[var(--muted)]">{t("imageSubmitHint")}</p>
               <TaskImageDropzone
                 imageUrl={imageUrl}
                 uploading={uploading}
                 error={error}
                 onUpload={handleUpload}
                 onRemove={() => setImageUrl(null)}
+                labels={{
+                  idle: t("uploadPhoto"),
+                  hint: t("uploadPhotoHint"),
+                }}
               />
             </div>
           ) : null}

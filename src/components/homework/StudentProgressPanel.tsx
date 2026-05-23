@@ -50,6 +50,7 @@ export function StudentProgressPanel({
   const [pending, startTransition] = useTransition();
   const [progress, setProgress] = useState<StudentProgressOverview | null>(null);
   const [assignOpen, setAssignOpen] = useState(false);
+  const [revokeTargetId, setRevokeTargetId] = useState<string | null>(null);
   const [expandedTaskId, setExpandedTaskId] = useState<string | null>(null);
   const [attempts, setAttempts] = useState<TaskAttemptRecord[]>([]);
   const [error, setError] = useState("");
@@ -64,10 +65,10 @@ export function StudentProgressPanel({
         const data = await fetchStudentProgressAction(locale, roomId, student.id);
         setProgress(data);
       } catch (loadError) {
-        setError(loadError instanceof Error ? loadError.message : "Error");
+        setError(loadError instanceof Error ? loadError.message : t("genericError"));
       }
     });
-  }, [open, locale, roomId, student.id]);
+  }, [open, locale, roomId, student.id, t]);
 
   function loadAttempts(roomTaskId: string) {
     if (expandedTaskId === roomTaskId) {
@@ -82,24 +83,21 @@ export function StudentProgressPanel({
         const data = await fetchTaskAttemptsAction(locale, roomId, student.id, roomTaskId);
         setAttempts(data);
       } catch (loadError) {
-        setError(loadError instanceof Error ? loadError.message : "Error");
+        setError(loadError instanceof Error ? loadError.message : t("genericError"));
       }
     });
   }
 
   function handleRevoke(assignmentId: string) {
-    if (!confirm(t("revoke") + "?")) {
-      return;
-    }
-
     startTransition(async () => {
       try {
         await revokeStudentAssignmentAction(locale, roomId, assignmentId);
+        setRevokeTargetId(null);
         const data = await fetchStudentProgressAction(locale, roomId, student.id);
         setProgress(data);
         router.refresh();
       } catch (revokeError) {
-        setError(revokeError instanceof Error ? revokeError.message : "Error");
+        setError(revokeError instanceof Error ? revokeError.message : t("genericError"));
       }
     });
   }
@@ -107,7 +105,7 @@ export function StudentProgressPanel({
   return (
     <>
       <RoomDialog
-        open={open}
+        open={open && !assignOpen}
         title={t("studentProgress")}
         onClose={onClose}
         maxWidthClass="max-w-lg"
@@ -147,7 +145,7 @@ export function StudentProgressPanel({
           </Button>
 
           {progress?.assignments.length === 0 ? (
-            <p className="text-sm text-[var(--muted)]">Назначений пока нет.</p>
+            <p className="text-sm text-[var(--muted)]">{t("noAssignmentsYet")}</p>
           ) : null}
 
           {progress?.assignments.map((assignment) => (
@@ -170,14 +168,38 @@ export function StudentProgressPanel({
                       : null}
                   </p>
                 </div>
-                <button
-                  type="button"
-                  onClick={() => handleRevoke(assignment.id)}
-                  disabled={pending}
-                  className="text-xs font-semibold text-red-600 hover:underline"
-                >
-                  {t("revoke")}
-                </button>
+                {revokeTargetId === assignment.id ? (
+                  <div className="flex shrink-0 flex-col items-end gap-1">
+                    <p className="text-xs text-[var(--muted)]">{t("revokeConfirm")}</p>
+                    <div className="flex gap-2">
+                      <button
+                        type="button"
+                        onClick={() => setRevokeTargetId(null)}
+                        disabled={pending}
+                        className="text-xs font-semibold text-[var(--muted)] hover:underline"
+                      >
+                        {t("cancel")}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleRevoke(assignment.id)}
+                        disabled={pending}
+                        className="text-xs font-semibold text-red-600 hover:underline"
+                      >
+                        {t("confirm")}
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => setRevokeTargetId(assignment.id)}
+                    disabled={pending}
+                    className="text-xs font-semibold text-red-600 hover:underline"
+                  >
+                    {t("revoke")}
+                  </button>
+                )}
               </div>
 
               <ul className="mt-3 space-y-2">
@@ -215,7 +237,7 @@ export function StudentProgressPanel({
                               >
                                 <p className="text-[var(--muted)]">
                                   {new Date(attempt.createdAt).toLocaleString("ru-RU")}
-                                  {attempt.usedHint ? " · подсказка" : null}
+                                  {attempt.usedHint ? ` · ${t("hintUsed")}` : null}
                                 </p>
                                 {attempt.answerText ? (
                                   <p className="mt-1 text-[var(--foreground-strong)]">

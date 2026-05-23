@@ -11,14 +11,14 @@ type TaskImageDropzoneProps = {
   error?: string;
   onUpload: (file: File) => Promise<void>;
   onRemove: () => void;
-  labels?: {
+  labels?: Partial<{
     idle: string;
     dragging: string;
     uploading: string;
     replace: string;
     remove: string;
     hint: string;
-  };
+  }>;
 };
 
 const defaultLabels = {

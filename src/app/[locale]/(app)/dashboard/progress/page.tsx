@@ -34,15 +34,17 @@ export default async function ProgressPage({ params }: Props) {
   return (
     <section className="mx-auto max-w-3xl px-4 py-6 sm:px-6 sm:py-8">
       <p className="text-sm font-semibold uppercase tracking-wide text-[var(--accent)]">
-        Прогресс
+        {t("progressPageEyebrow")}
       </p>
-      <h1 className="mt-2 font-display text-3xl text-[var(--foreground-strong)]">Ваш прогресс</h1>
+      <h1 className="mt-2 font-display text-3xl text-[var(--foreground-strong)]">
+        {t("progressPageTitle")}
+      </h1>
 
       <div className="mt-6 grid grid-cols-2 gap-3 sm:grid-cols-4">
         <StatCard label={t("statsCompleted")} value={`${totals.completed}/${totals.assigned}`} />
         <StatCard label={t("statsErrors")} value={String(totals.errors)} />
         <StatCard label={t("statsHints")} value={String(totals.hints)} />
-        <StatCard label="Тем" value={String(assignments.length)} />
+        <StatCard label={t("topicsCount")} value={String(assignments.length)} />
       </div>
 
       {assignments.length === 0 ? (

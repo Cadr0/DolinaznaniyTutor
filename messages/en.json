@@ -208,7 +208,24 @@
       "statusSkipped": "Skipped",
       "statusSubmitted": "Submitted",
       "statusPending": "In progress",
-      "myHomeworkInRoom": "My homework"
+      "myHomeworkInRoom": "My homework",
+      "progressLink": "Progress →",
+      "genericError": "Something went wrong. Please try again.",
+      "uploadFailed": "Could not upload the file",
+      "imageSubmitHint": "Upload a photo of your answer, then tap Check",
+      "uploadPhotoHint": "or click to choose · JPG, PNG, WebP up to 5 MB",
+      "noAssignmentsYet": "No assignments yet.",
+      "noTopicsInRoom": "This room has no topics with tasks yet.",
+      "topicLabel": "Topic",
+      "tasksLabel": "Tasks",
+      "cancel": "Cancel",
+      "confirm": "Confirm",
+      "selectAtLeastOneTask": "Select at least one task",
+      "revokeConfirm": "Remove this assignment?",
+      "hintUsed": "hint used",
+      "progressPageEyebrow": "Progress",
+      "progressPageTitle": "Your progress",
+      "topicsCount": "Topics"
     }
   },
   "lang": {

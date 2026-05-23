@@ -52,7 +52,7 @@ export function AssignTopicModal({
           setSelectedTaskIds(new Set(data[0].tasks.map((task) => task.id)));
         }
       } catch (loadError) {
-        setError(loadError instanceof Error ? loadError.message : "Error");
+        setError(loadError instanceof Error ? loadError.message : t("genericError"));
       }
     });
   }, [open, locale, roomId]);
@@ -86,7 +86,7 @@ export function AssignTopicModal({
 
   function handleAssign() {
     if (!selectedTopicId || selectedTaskIds.size === 0) {
-      setError("Выберите хотя бы одно задание");
+      setError(t("selectAtLeastOneTask"));
       return;
     }
 
@@ -103,7 +103,7 @@ export function AssignTopicModal({
         router.refresh();
         onClose();
       } catch (assignError) {
-        setError(assignError instanceof Error ? assignError.message : "Error");
+        setError(assignError instanceof Error ? assignError.message : t("genericError"));
       }
     });
   }
@@ -118,12 +118,12 @@ export function AssignTopicModal({
       <p className="mb-4 text-sm text-[var(--muted)]">{studentName}</p>
 
       {topics.length === 0 ? (
-        <p className="text-sm text-[var(--muted)]">В комнате пока нет тем с заданиями.</p>
+        <p className="text-sm text-[var(--muted)]">{t("noTopicsInRoom")}</p>
       ) : (
         <div className="space-y-4">
           <div>
             <label className="text-xs font-semibold uppercase tracking-wide text-[var(--muted)]">
-              Тема
+              {t("topicLabel")}
             </label>
             <select
               value={selectedTopicId ?? ""}
@@ -142,7 +142,7 @@ export function AssignTopicModal({
             <div>
               <div className="flex items-center justify-between gap-2">
                 <p className="text-xs font-semibold uppercase tracking-wide text-[var(--muted)]">
-                  Задания
+                  {t("tasksLabel")}
                 </p>
                 <button
                   type="button"
@@ -183,7 +183,7 @@ export function AssignTopicModal({
 
       <div className="mt-6 flex justify-end gap-2">
         <Button type="button" variant="ghost" onClick={onClose} disabled={pending}>
-          Отмена
+          {t("cancel")}
         </Button>
         <Button type="button" onClick={handleAssign} disabled={pending || topics.length === 0}>
           {t("assignSubmit")}

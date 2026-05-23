@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useTranslations } from "next-intl";
 import { StudentProgressPanel } from "@/components/homework/StudentProgressPanel";
 
 type RoomStudent = {
@@ -22,6 +23,7 @@ export function RoomStudentsSection({
   students,
   isTutor,
 }: RoomStudentsSectionProps) {
+  const t = useTranslations("app.homeworkPage");
   const [selectedStudent, setSelectedStudent] = useState<RoomStudent | null>(null);
 
   return (
@@ -42,12 +44,13 @@ export function RoomStudentsSection({
                   <button
                     type="button"
                     onClick={() => setSelectedStudent(student)}
+                    aria-label={t("studentProgress")}
                     className="flex w-full items-center gap-3 rounded-[1.25rem] border border-[var(--card-border)] bg-[var(--background)] p-4 text-left transition-colors hover:border-[var(--accent)]/40"
                   >
                     <StudentAvatar name={student.name} />
                     <StudentInfo name={student.name} email={student.email} />
                     <span className="ml-auto text-xs font-semibold text-[var(--accent)]">
-                      Прогресс →
+                      {t("progressLink")}
                     </span>
                   </button>
                 ) : (

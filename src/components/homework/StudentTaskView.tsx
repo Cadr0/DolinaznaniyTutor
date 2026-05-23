@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import type { StudentRoomTask } from "@/lib/room-tasks";
 import { answerTypeFullLabel } from "@/lib/task-labels";
 
@@ -14,6 +15,8 @@ type StudentTaskViewProps = {
 };
 
 export function StudentTaskView({ task, hintRevealed, children }: StudentTaskViewProps) {
+  const t = useTranslations("app.homeworkPage");
+
   return (
     <div className="space-y-4">
       <div>
@@ -46,7 +49,7 @@ export function StudentTaskView({ task, hintRevealed, children }: StudentTaskVie
       {hintRevealed ? (
         <div className="rounded-2xl border border-dashed border-[var(--accent)]/40 bg-[var(--accent-soft)]/40 p-4">
           <p className="text-xs font-semibold uppercase tracking-wide text-[var(--accent)]">
-            Подсказка
+            {t("hint")}
           </p>
           <p className="mt-2 whitespace-pre-line text-sm text-[var(--foreground-strong)]">
             {formatTaskText(hintRevealed)}
