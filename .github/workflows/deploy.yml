@@ -9,6 +9,10 @@ concurrency:
   group: deploy-production
   cancel-in-progress: false
 
+permissions:
+  contents: read
+  packages: write
+
 env:
   REGISTRY: ghcr.io
   APP_IMAGE: ghcr.io/cadr0/dolinaznaniy-tutor
@@ -18,11 +22,11 @@ jobs:
   build:
     runs-on: ubuntu-latest
     timeout-minutes: 25
-    permissions:
-      contents: read
-      packages: write
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+          token: ${{ secrets.GHCR_PAT }}
 
       - uses: actions/setup-node@v4
         with:
@@ -87,14 +91,22 @@ jobs:
               echo "ERROR: GHCR_PAT secret is not set"
               exit 1
             fi
-            if [ ! -d /opt/dolinaznaniy/.git ]; then
+            APP_DIR=/opt/dolinaznaniy
+            mkdir -p "$APP_DIR"
+            cd "$APP_DIR"
+            REPO_URL="https://github.com/Cadr0/DolinaznaniyTutor.git"
+            if [ -n "${GHCR_TOKEN:-}" ]; then
+              REPO_URL="https://x-access-token:${GHCR_TOKEN}@github.com/Cadr0/DolinaznaniyTutor.git"
+            fi
+            if [ ! -d .git ]; then
               apt-get update -qq
               apt-get install -y -qq git
-              git clone https://github.com/Cadr0/DolinaznaniyTutor.git /opt/dolinaznaniy
+              git clone --branch main --depth 1 "$REPO_URL" .
+            else
+              git remote set-url origin "$REPO_URL"
+              git fetch origin main --depth 1
+              git reset --hard origin/main
             fi
-            cd /opt/dolinaznaniy
-            git fetch origin main
-            git reset --hard origin/main
             if [ ! -f infra/deploy.sh ]; then
               echo "ERROR: infra/deploy.sh not found in $(pwd)"
               ls -la

@@ -29,7 +29,10 @@ if [ -z "${GHCR_TOKEN:-}" ]; then
 fi
 
 echo "==> Git pull..."
-git fetch origin main
+if [ -n "${GHCR_TOKEN:-}" ]; then
+  git remote set-url origin "https://x-access-token:${GHCR_TOKEN}@github.com/Cadr0/DolinaznaniyTutor.git"
+fi
+git fetch origin main --depth 1
 git reset --hard origin/main
 
 COMMIT=$(git rev-parse --short HEAD)
