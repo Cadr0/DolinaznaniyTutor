@@ -90,5 +90,17 @@ export function AppNavIcon({ icon, active = false }: AppNavIconProps) {
           <path d="M12 11.5V20" stroke="currentColor" strokeWidth="1.8" />
         </svg>
       );
+    case "marketplace":
+      return (
+        <svg className={className} width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden>
+          <path
+            d="M4 8h16l-1.2 10.5a1 1 0 0 1-1 .8H6.2a1 1 0 0 1-1-.8L4 8Z"
+            stroke="currentColor"
+            strokeWidth="1.8"
+            strokeLinejoin="round"
+          />
+          <path d="M8 8V6a4 4 0 0 1 8 0v2" stroke="currentColor" strokeWidth="1.8" />
+        </svg>
+      );
   }
 }

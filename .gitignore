@@ -20,3 +20,7 @@ prisma/*.db
 
 # Docker volumes (local)
 postgres_data/
+uploads/
+
+# Legacy migration assets (keep SQL locally, skip binary uploads)
+old bd/uploads/

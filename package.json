@@ -11,6 +11,10 @@
     "db:push": "prisma db push",
     "db:migrate": "prisma migrate dev",
     "db:studio": "prisma studio",
+    "import:legacy-tasks": "tsx scripts/import-legacy-tasks.ts",
+    "validate:legacy-assets": "tsx scripts/validate-legacy-assets.ts",
+    "ensure:platform-user": "tsx scripts/ensure-platform-user.ts",
+    "publish:legacy-topics": "tsx scripts/publish-legacy-topics.ts",
     "postinstall": "prisma generate"
   },
   "dependencies": {
@@ -33,6 +37,7 @@
     "eslint-config-next": "^15.3.3",
     "prisma": "^6.9.0",
     "tailwindcss": "^4.1.8",
+    "tsx": "^4.20.3",
     "typescript": "^5.8.3"
   }
 }

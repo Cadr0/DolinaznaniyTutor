@@ -23,9 +23,6 @@ export default async function RoomsPage({ params }: Props) {
           members: {
             where: { role: "STUDENT" },
           },
-          assignments: {
-            where: { status: "PUBLISHED" },
-          },
         },
         orderBy: { createdAt: "desc" },
       }),
@@ -37,7 +34,6 @@ export default async function RoomsPage({ params }: Props) {
       title: room.title,
       description: room.description,
       studentCount: room.members.length,
-      assignmentCount: room.assignments.length,
     }));
 
     return (
@@ -53,7 +49,6 @@ export default async function RoomsPage({ params }: Props) {
       room: {
         include: {
           owner: { select: { name: true } },
-          assignments: { where: { status: "PUBLISHED" } },
         },
       },
     },
@@ -84,9 +79,6 @@ export default async function RoomsPage({ params }: Props) {
             >
               <h2 className="font-display text-xl text-[var(--foreground-strong)]">{room.title}</h2>
               <p className="mt-2 text-sm text-[var(--muted)]">Учитель: {room.owner.name}</p>
-              <p className="mt-4 text-xs font-semibold text-[var(--muted)]">
-                {room.assignments.length} активных заданий
-              </p>
             </Link>
           ))}
         </div>

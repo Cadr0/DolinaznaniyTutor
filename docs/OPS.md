@@ -65,6 +65,30 @@ $env:VDS_PASSWORD = "..."
 .\infra\remote-ops.ps1 domain
 ```
 
+## Импорт заданий на production
+
+```bash
+# 1. Скопировать legacy-данные на сервер
+scp -r "old bd/uploads/tasks" root@111.88.118.35:/opt/dolinaznaniy/old-bd/uploads/
+scp "old bd/u188809_dolinaznaniy (1).sql" root@111.88.118.35:/opt/dolinaznaniy/old-bd/
+
+# 2. На сервере после deploy
+cd /opt/dolinaznaniy
+docker compose -f docker-compose.prod.yml run --rm migrate
+
+docker run --rm --network dolinaznaniy_app \
+  -e DATABASE_URL="$(grep DATABASE_URL .env | cut -d= -f2- | tr -d '\"')" \
+  -e UPLOADS_DIR=/work/uploads \
+  -e IMPORT_TUTOR_EMAIL=catalog@dolinaznaniy.ru \
+  -e LEGACY_SQL_PATH=/work/old-bd/u188809_dolinaznaniy\ \(1\).sql \
+  -e LEGACY_UPLOADS_DIR=/work/old-bd/uploads/tasks \
+  -v "$(pwd)":/work -w /work \
+  -v dolinaznaniy_uploads_data:/work/uploads \
+  node:22-alpine sh -c "npm ci && npm run ensure:platform-user && npm run import:legacy-tasks && npm run publish:legacy-topics"
+```
+
+Проверка: `/dashboard/marketplace` — темы от «Долина знаний».
+
 ## Домен и HTTPS
 
 - Домен: `diary-ai.ru`

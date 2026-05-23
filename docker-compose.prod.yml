@@ -34,7 +34,10 @@ services:
       SMTP_USER: ${SMTP_USER:-}
       SMTP_PASS: ${SMTP_PASS:-}
       SMTP_FROM: ${SMTP_FROM:-noreply@diary-ai.ru}
+      UPLOADS_DIR: /app/uploads
       NODE_ENV: production
+    volumes:
+      - uploads_data:/app/uploads
     ports:
       - "127.0.0.1:3000:3000"
     healthcheck:
@@ -70,6 +73,7 @@ services:
 
 volumes:
   postgres_data:
+  uploads_data:
 
 networks:
   app:

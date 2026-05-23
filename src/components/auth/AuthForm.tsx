@@ -19,37 +19,73 @@ type AuthFormProps = {
   inviteInvalid?: boolean;
 };
 
-async function postAuth<T>(path: string, body: Record<string, unknown>) {
+type AuthPayload = {
+  message?: string;
+  error?: { message?: string; code?: string } | string;
+};
+
+function resolveAuthError(payload: AuthPayload, status: number, mode: Mode) {
+  const errorObject = typeof payload.error === "object" ? payload.error : undefined;
+  const rawMessage =
+    typeof payload.error === "string"
+      ? payload.error
+      : errorObject?.message ?? payload.message ?? "";
+  const combined = `${errorObject?.code ?? ""} ${rawMessage}`.toLowerCase();
+
+  if (mode === "register") {
+    if (
+      status === 409 ||
+      combined.includes("already") ||
+      combined.includes("exists") ||
+      combined.includes("unique") ||
+      combined.includes("duplicate") ||
+      combined.includes("registered")
+    ) {
+      return "Этот email уже зарегистрирован. Войдите в аккаунт или восстановите пароль.";
+    }
+  }
+
+  if (rawMessage) {
+    return rawMessage;
+  }
+
+  if (status === 429) {
+    return "Слишком много попыток. Подождите минуту и попробуйте снова.";
+  }
+
+  if (status >= 500) {
+    return "Сервер временно недоступен. Попробуйте через минуту.";
+  }
+
+  return "Не удалось выполнить запрос. Проверьте данные и попробуйте снова.";
+}
+
+async function isEmailRegistered(email: string) {
+  const response = await fetch("/api/auth/email-status", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ email }),
+  });
+
+  if (!response.ok) {
+    return false;
+  }
+
+  const payload = (await response.json().catch(() => ({}))) as { registered?: boolean };
+  return Boolean(payload.registered);
+}
+
+async function postAuth<T>(path: string, body: Record<string, unknown>, mode: Mode) {
   const response = await fetch(`/api/auth${path}`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(body),
   });
 
-  const payload = (await response.json().catch(() => ({}))) as T & {
-    message?: string;
-    error?: { message?: string } | string;
-  };
+  const payload = (await response.json().catch(() => ({}))) as T & AuthPayload;
 
   if (!response.ok) {
-    const serverMessage =
-      typeof payload.error === "string"
-        ? payload.error
-        : payload.error?.message ?? payload.message;
-
-    if (serverMessage) {
-      throw new Error(serverMessage);
-    }
-
-    if (response.status === 429) {
-      throw new Error("Слишком много попыток. Подождите минуту и попробуйте снова.");
-    }
-
-    if (response.status >= 500) {
-      throw new Error("Сервер временно недоступен. Попробуйте через минуту.");
-    }
-
-    throw new Error("Не удалось выполнить запрос. Проверьте данные и попробуйте снова.");
+    throw new Error(resolveAuthError(payload, response.status, mode));
   }
 
   return payload;
@@ -100,21 +136,37 @@ export function AuthForm({
 
     try {
       if (mode === "register") {
-        await postAuth("/sign-up/email", {
-          email,
-          password,
-          name: email.split("@")[0],
-          role,
-        });
+        const normalizedEmail = email.trim().toLowerCase();
+
+        if (await isEmailRegistered(normalizedEmail)) {
+          throw new Error(
+            "Этот email уже зарегистрирован. Войдите в аккаунт или восстановите пароль.",
+          );
+        }
+
+        await postAuth(
+          "/sign-up/email",
+          {
+            email: normalizedEmail,
+            password,
+            name: normalizedEmail.split("@")[0],
+            role,
+          },
+          mode,
+        );
         setStep("code");
         return;
       }
 
-      await postAuth("/sign-in/email", {
-        email,
-        password,
-        rememberMe,
-      });
+      await postAuth(
+        "/sign-in/email",
+        {
+          email: email.trim().toLowerCase(),
+          password,
+          rememberMe,
+        },
+        mode,
+      );
       await goAfterAuth();
     } catch (authError) {
       setError(authError instanceof Error ? authError.message : t("genericError"));
@@ -129,12 +181,16 @@ export function AuthForm({
     setLoading(true);
 
     try {
-      await postAuth("/email-otp/verify-email", { email, otp });
-      await postAuth("/sign-in/email", {
-        email,
-        password,
-        rememberMe,
-      });
+      await postAuth("/email-otp/verify-email", { email, otp }, mode);
+      await postAuth(
+        "/sign-in/email",
+        {
+          email: email.trim().toLowerCase(),
+          password,
+          rememberMe,
+        },
+        mode,
+      );
       await goAfterAuth();
     } catch (authError) {
       setError(authError instanceof Error ? authError.message : t("genericError"));
@@ -150,7 +206,7 @@ export function AuthForm({
 
     try {
       if (!resetCodeSent) {
-        await postAuth("/email-otp/request-password-reset", { email });
+        await postAuth("/email-otp/request-password-reset", { email }, mode);
         setResetCodeSent(true);
         return;
       }
@@ -159,16 +215,24 @@ export function AuthForm({
         throw new Error(t("passwordMismatch"));
       }
 
-      await postAuth("/email-otp/reset-password", {
-        email,
-        otp: otp.trim(),
-        password,
-      });
-      await postAuth("/sign-in/email", {
-        email,
-        password,
-        rememberMe: true,
-      });
+      await postAuth(
+        "/email-otp/reset-password",
+        {
+          email,
+          otp: otp.trim(),
+          password,
+        },
+        mode,
+      );
+      await postAuth(
+        "/sign-in/email",
+        {
+          email: email.trim().toLowerCase(),
+          password,
+          rememberMe: true,
+        },
+        mode,
+      );
       await goAfterAuth();
     } catch (authError) {
       setError(authError instanceof Error ? authError.message : t("genericError"));
@@ -299,7 +363,16 @@ function AuthShell({
             : subtitle}
         </p>
         {error ? (
-          <div className="mt-4 rounded-2xl bg-red-50 px-4 py-3 text-sm text-red-700">{error}</div>
+          <div className="mt-4 rounded-2xl bg-red-50 px-4 py-3 text-sm text-red-700">
+            <p>{error}</p>
+            {error.includes("уже зарегистрирован") ? (
+              <p className="mt-2">
+                <Link href="/login" className="font-semibold text-[var(--accent)] hover:underline">
+                  Перейти ко входу
+                </Link>
+              </p>
+            ) : null}
+          </div>
         ) : null}
         {inviteInvalid ? (
           <div className="mt-4 rounded-2xl bg-red-50 px-4 py-3 text-sm text-red-700">

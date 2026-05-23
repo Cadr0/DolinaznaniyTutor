@@ -142,16 +142,6 @@ export async function getRoomForUser(roomId: string, userId: string, userRole: s
         },
         orderBy: { joinedAt: "asc" },
       },
-      assignments: {
-        orderBy: { createdAt: "desc" },
-        include: {
-          submissions: {
-            include: {
-              student: { select: { id: true, name: true } },
-            },
-          },
-        },
-      },
     },
   });
 

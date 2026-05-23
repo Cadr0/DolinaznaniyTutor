@@ -11,7 +11,8 @@ export type AppNavItem = {
     | "progress"
     | "students"
     | "review"
-    | "materials";
+    | "materials"
+    | "marketplace";
 };
 
 const studentNav: AppNavItem[] = [
@@ -28,6 +29,7 @@ const tutorNav: AppNavItem[] = [
   { href: "/dashboard/rooms", labelKey: "rooms", iconKey: "rooms" },
   { href: "/dashboard/assignments", labelKey: "assignments", iconKey: "assignments" },
   { href: "/dashboard/review", labelKey: "review", iconKey: "review" },
+  { href: "/dashboard/marketplace", labelKey: "marketplace", iconKey: "marketplace" },
   { href: "/dashboard/materials", labelKey: "materials", iconKey: "materials" },
 ];
 

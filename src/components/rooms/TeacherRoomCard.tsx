@@ -9,7 +9,6 @@ export type TeacherRoomSummary = {
   title: string;
   description: string | null;
   studentCount: number;
-  assignmentCount: number;
 };
 
 type TeacherRoomCardProps = {
@@ -64,10 +63,9 @@ export function TeacherRoomCard({ locale, room }: TeacherRoomCardProps) {
           ) : (
             <p className="text-sm text-[var(--muted)]/70">Без описания</p>
           )}
-          <div className="mt-auto flex gap-4 pt-4 text-xs font-semibold text-[var(--muted)]">
-            <span>{room.studentCount} учеников</span>
-            <span>{room.assignmentCount} заданий</span>
-          </div>
+          <p className="mt-auto pt-4 text-xs font-semibold text-[var(--muted)]">
+            {room.studentCount} учеников
+          </p>
         </Link>
       </article>
 
