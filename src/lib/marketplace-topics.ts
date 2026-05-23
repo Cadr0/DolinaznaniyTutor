@@ -45,8 +45,28 @@ export async function getPublishedTopicDetail(topicId: string) {
           title: true,
           description: true,
           answerType: true,
+          correctAnswer: true,
+          hint: true,
           imageUrl: true,
           sortOrder: true,
+          supportsMultipleAnswers: true,
+          alternativeAnswers: {
+            orderBy: { createdAt: "asc" },
+            select: {
+              id: true,
+              answerText: true,
+              explanation: true,
+            },
+          },
+          choiceOptions: {
+            orderBy: { sortOrder: "asc" },
+            select: {
+              id: true,
+              text: true,
+              isCorrect: true,
+              sortOrder: true,
+            },
+          },
         },
       },
     },

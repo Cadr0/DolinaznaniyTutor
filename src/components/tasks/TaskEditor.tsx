@@ -8,7 +8,14 @@ import {
   deleteTask,
   updateTask,
 } from "@/app/[locale]/(app)/dashboard/materials/actions";
+import {
+  MarketplaceTaskPreview,
+  type MarketplaceTaskDetail,
+} from "@/components/marketplace/MarketplaceTaskPreview";
+import { RoomDialog } from "@/components/rooms/RoomDialog";
+import { TaskImageDropzone } from "@/components/tasks/TaskImageDropzone";
 import type { TaskWithDetails } from "@/lib/tasks";
+import { answerTypeOptions } from "@/lib/task-labels";
 
 type TopicOption = {
   id: string;
@@ -25,11 +32,7 @@ type TaskEditorProps = {
   onDeleted: () => void;
 };
 
-const answerTypes: { value: TaskAnswerType; label: string }[] = [
-  { value: "TEXT", label: "Текстовый ответ" },
-  { value: "CHOICE", label: "Выбор варианта" },
-  { value: "IMAGE", label: "Ответ фото" },
-];
+type EditorTab = "edit" | "preview";
 
 export function TaskEditor({
   locale,
@@ -40,14 +43,20 @@ export function TaskEditor({
   onCreated,
   onDeleted,
 }: TaskEditorProps) {
-  const [answerType, setAnswerType] = useState<TaskAnswerType>(
-    task?.answerType ?? "TEXT",
+  const [tab, setTab] = useState<EditorTab>("edit");
+  const [answerType, setAnswerType] = useState<TaskAnswerType>(task?.answerType ?? "TEXT");
+  const [title, setTitle] = useState(task?.title ?? "");
+  const [description, setDescription] = useState(task?.description ?? "");
+  const [correctAnswer, setCorrectAnswer] = useState(task?.correctAnswer ?? "");
+  const [hint, setHint] = useState(task?.hint ?? "");
+  const [supportsMultipleAnswers, setSupportsMultipleAnswers] = useState(
+    task?.supportsMultipleAnswers ?? false,
   );
   const [alternatives, setAlternatives] = useState(
     task?.alternativeAnswers.map((item) => ({
       answerText: item.answerText,
       explanation: item.explanation ?? "",
-    })) ?? [{ answerText: "", explanation: "" }],
+    })) ?? [],
   );
   const [choiceOptions, setChoiceOptions] = useState(
     task?.choiceOptions.map((item) => ({
@@ -63,12 +72,55 @@ export function TaskEditor({
   const [error, setError] = useState("");
   const [removeImage, setRemoveImage] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [showTopicPicker, setShowTopicPicker] = useState(mode === "create");
+  const [deleteOpen, setDeleteOpen] = useState(false);
   const router = useRouter();
 
   const defaultTopicId = useMemo(
     () => task?.topicId ?? selectedTopicId ?? topics[0]?.id ?? "",
     [task?.topicId, selectedTopicId, topics],
   );
+  const [topicId, setTopicId] = useState(defaultTopicId);
+
+  const previewTask = useMemo((): MarketplaceTaskDetail => {
+    return {
+      id: task?.id ?? "preview",
+      title: title || "Без названия",
+      description: description || null,
+      answerType,
+      correctAnswer: correctAnswer || null,
+      hint: hint || null,
+      imageUrl: removeImage ? null : imageUrl || null,
+      supportsMultipleAnswers,
+      alternativeAnswers: alternatives
+        .filter((alt) => alt.answerText.trim())
+        .map((alt, index) => ({
+          id: `alt-${index}`,
+          answerText: alt.answerText,
+          explanation: alt.explanation || null,
+        })),
+      choiceOptions: choiceOptions
+        .filter((opt) => opt.text.trim())
+        .map((opt, index) => ({
+          id: `opt-${index}`,
+          text: opt.text,
+          isCorrect: opt.isCorrect,
+          sortOrder: index,
+        })),
+    };
+  }, [
+    task?.id,
+    title,
+    description,
+    answerType,
+    correctAnswer,
+    hint,
+    imageUrl,
+    removeImage,
+    supportsMultipleAnswers,
+    alternatives,
+    choiceOptions,
+  ]);
 
   if (mode === "create" && !selectedTopicId && topics.length === 0) {
     return (
@@ -100,21 +152,64 @@ export function TaskEditor({
       setRemoveImage(false);
     } catch (uploadError) {
       setError(uploadError instanceof Error ? uploadError.message : "Ошибка загрузки");
+      throw uploadError;
     } finally {
       setUploading(false);
     }
   }
 
+  function validateForm(): string | null {
+    if (!title.trim()) {
+      return "Укажите название задания";
+    }
+
+    if (answerType === "TEXT" && !correctAnswer.trim()) {
+      return "Укажите основной правильный ответ";
+    }
+
+    if (answerType === "CHOICE") {
+      const filled = choiceOptions.filter((opt) => opt.text.trim());
+
+      if (filled.length < 2) {
+        return "Добавьте минимум 2 варианта ответа";
+      }
+
+      if (!filled.some((opt) => opt.isCorrect)) {
+        return "Отметьте хотя бы один правильный вариант";
+      }
+    }
+
+    return null;
+  }
+
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
+
+    const validationError = validateForm();
+
+    if (validationError) {
+      setError(validationError);
+      setTab("edit");
+      return;
+    }
+
     setSaving(true);
     setError("");
 
     const formData = new FormData(event.currentTarget);
+    formData.set("title", title);
+    formData.set("description", description);
+    formData.set("topicId", topicId);
     formData.set("answerType", answerType);
+    formData.set("correctAnswer", correctAnswer);
+    formData.set("hint", hint);
     formData.set("imageUrl", imageUrl);
     formData.set("alternativesJson", JSON.stringify(alternatives));
     formData.set("choiceOptionsJson", JSON.stringify(choiceOptions));
+
+    if (supportsMultipleAnswers) {
+      formData.set("supportsMultipleAnswers", "on");
+    }
 
     if (removeImage) {
       formData.set("removeImage", "on");
@@ -123,6 +218,7 @@ export function TaskEditor({
     try {
       if (mode === "create") {
         const taskId = await createTask(locale, formData);
+
         if (taskId) {
           onCreated(taskId);
         }
@@ -142,304 +238,383 @@ export function TaskEditor({
       return;
     }
 
-    if (!confirm(`Удалить задание «${task.title}»?`)) {
-      return;
-    }
-
     await deleteTask(locale, task.id);
+    setDeleteOpen(false);
     onDeleted();
   }
 
   return (
-    <div className="rounded-[2rem] border border-[var(--card-border)] bg-white p-4 shadow-[var(--shadow-card)] sm:p-6">
-      <h2 className="font-display text-2xl text-[var(--foreground-strong)]">
-        {mode === "create" ? "Новое задание" : "Конструктор задания"}
-      </h2>
+    <div className="rounded-[2rem] border border-[var(--card-border)] bg-white shadow-[var(--shadow-card)]">
+      <div className="border-b border-[var(--card-border)] px-4 py-4 sm:px-6">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <p className="text-xs font-semibold uppercase tracking-wide text-[var(--accent)]">
+            {mode === "create" ? "Новое задание" : "Конструктор"}
+          </p>
+          <div className="flex rounded-full border border-[var(--card-border)] p-0.5">
+            <button
+              type="button"
+              onClick={() => setTab("edit")}
+              className={`rounded-full px-4 py-1.5 text-xs font-semibold ${
+                tab === "edit"
+                  ? "bg-[var(--accent)] text-white"
+                  : "text-[var(--muted)] hover:text-[var(--foreground-strong)]"
+              }`}
+            >
+              Редактор
+            </button>
+            <button
+              type="button"
+              onClick={() => setTab("preview")}
+              className={`rounded-full px-4 py-1.5 text-xs font-semibold ${
+                tab === "preview"
+                  ? "bg-[var(--accent)] text-white"
+                  : "text-[var(--muted)] hover:text-[var(--foreground-strong)]"
+              }`}
+            >
+              Предпросмотр
+            </button>
+          </div>
+        </div>
 
-      <form onSubmit={handleSubmit} className="mt-5 grid gap-4">
-        <label className="block text-sm font-semibold text-[var(--foreground-strong)]">
-          Тема
-          <select
-            name="topicId"
-            defaultValue={defaultTopicId}
-            required
-            className="touch-target mt-2 w-full rounded-2xl border-2 border-[var(--card-border)] px-4 py-3 text-base font-normal outline-none focus:border-[var(--accent)]"
-          >
-            {topics.map((topic) => (
-              <option key={topic.id} value={topic.id}>
-                {topic.title}
-              </option>
-            ))}
-          </select>
-        </label>
-
-        <label className="block text-sm font-semibold text-[var(--foreground-strong)]">
-          Название
+        {tab === "edit" ? (
           <input
-            name="title"
+            value={title}
+            onChange={(event) => setTitle(event.target.value)}
             required
-            defaultValue={task?.title ?? ""}
-            placeholder="№6 Степени"
-            className="touch-target mt-2 w-full rounded-2xl border-2 border-[var(--card-border)] px-4 text-base font-normal outline-none focus:border-[var(--accent)]"
+            placeholder="Название задания"
+            className="mt-3 w-full border-0 bg-transparent font-display text-2xl text-[var(--foreground-strong)] outline-none placeholder:text-[var(--muted)]"
           />
-        </label>
+        ) : (
+          <h2 className="mt-3 font-display text-2xl text-[var(--foreground-strong)]">
+            {title || "Без названия"}
+          </h2>
+        )}
+      </div>
 
-        <label className="block text-sm font-semibold text-[var(--foreground-strong)]">
-          Описание задания
-          <textarea
-            name="description"
-            rows={4}
-            defaultValue={task?.description ?? ""}
-            placeholder="Найдите значение выражения на рисунке."
-            className="mt-2 w-full rounded-2xl border-2 border-[var(--card-border)] px-4 py-3 text-base font-normal outline-none focus:border-[var(--accent)]"
-          />
-        </label>
+      {tab === "preview" ? (
+        <div className="px-4 py-5 sm:px-6">
+          <MarketplaceTaskPreview task={previewTask} />
+        </div>
+      ) : (
+        <form id="task-editor-form" onSubmit={handleSubmit} className="px-4 py-5 sm:px-6">
+          <input type="hidden" name="title" value={title} />
+          <input type="hidden" name="description" value={description} />
+          <input type="hidden" name="topicId" value={topicId} />
+          <input type="hidden" name="correctAnswer" value={correctAnswer} />
+          <input type="hidden" name="hint" value={hint} />
 
-        <label className="block text-sm font-semibold text-[var(--foreground-strong)]">
-          Тип ответа
-          <select
-            value={answerType}
-            onChange={(event) => setAnswerType(event.target.value as TaskAnswerType)}
-            className="touch-target mt-2 w-full rounded-2xl border-2 border-[var(--card-border)] px-4 py-3 text-base font-normal outline-none focus:border-[var(--accent)]"
-          >
-            {answerTypes.map((item) => (
-              <option key={item.value} value={item.value}>
-                {item.label}
-              </option>
-            ))}
-          </select>
-        </label>
-
-        {answerType === "TEXT" ? (
-          <>
-            <label className="block text-sm font-semibold text-[var(--foreground-strong)]">
-              Основной правильный ответ
-              <input
-                name="correctAnswer"
-                required
-                defaultValue={task?.correctAnswer ?? ""}
-                placeholder="125"
-                className="touch-target mt-2 w-full rounded-2xl border-2 border-[var(--card-border)] px-4 text-base font-normal outline-none focus:border-[var(--accent)]"
-              />
-            </label>
-
-            <div>
-              <div className="flex items-center justify-between gap-3">
-                <p className="text-sm font-semibold text-[var(--foreground-strong)]">
-                  Альтернативные правильные ответы
-                </p>
+          {showTopicPicker && topics.length > 1 ? (
+            <div className="mb-5">
+              <label className="block text-xs font-semibold uppercase tracking-wide text-[var(--muted)]">
+                Тема
+                <select
+                  value={topicId}
+                  onChange={(event) => setTopicId(event.target.value)}
+                  className="touch-target mt-1.5 w-full rounded-2xl border-2 border-[var(--card-border)] px-4 py-2.5 text-sm outline-none focus:border-[var(--accent)]"
+                >
+                  {topics.map((topic) => (
+                    <option key={topic.id} value={topic.id}>
+                      {topic.title}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            </div>
+          ) : mode === "edit" ? (
+            <div className="mb-5 flex items-center justify-between gap-2 rounded-xl bg-[var(--background)] px-3 py-2">
+              <p className="truncate text-sm text-[var(--muted)]">
+                {topics.find((t) => t.id === topicId)?.title ?? "Тема"}
+              </p>
+              {topics.length > 1 ? (
                 <button
                   type="button"
-                  onClick={() =>
-                    setAlternatives((items) => [...items, { answerText: "", explanation: "" }])
-                  }
-                  className="text-sm font-semibold text-[var(--accent)] hover:underline"
+                  onClick={() => setShowTopicPicker((value) => !value)}
+                  className="shrink-0 text-xs font-semibold text-[var(--accent)] hover:underline"
                 >
-                  + Добавить
+                  {showTopicPicker ? "Скрыть" : "Перенести"}
                 </button>
-              </div>
-              <div className="mt-2 space-y-2">
-                {alternatives.map((item, index) => (
-                  <div key={index} className="grid gap-2 sm:grid-cols-[1fr_1fr_auto]">
-                    <input
-                      value={item.answerText}
-                      onChange={(event) =>
-                        setAlternatives((items) =>
-                          items.map((alt, altIndex) =>
-                            altIndex === index
-                              ? { ...alt, answerText: event.target.value }
-                              : alt,
-                          ),
-                        )
-                      }
-                      placeholder="Альтернативный ответ"
-                      className="touch-target rounded-2xl border-2 border-[var(--card-border)] px-4 py-2 text-sm outline-none focus:border-[var(--accent)]"
-                    />
-                    <input
-                      value={item.explanation}
-                      onChange={(event) =>
-                        setAlternatives((items) =>
-                          items.map((alt, altIndex) =>
-                            altIndex === index
-                              ? { ...alt, explanation: event.target.value }
-                              : alt,
-                          ),
-                        )
-                      }
-                      placeholder="Пояснение (необяз.)"
-                      className="touch-target rounded-2xl border-2 border-[var(--card-border)] px-4 py-2 text-sm outline-none focus:border-[var(--accent)]"
-                    />
-                    <button
-                      type="button"
-                      onClick={() =>
-                        setAlternatives((items) => items.filter((_, altIndex) => altIndex !== index))
-                      }
-                      className="rounded-full px-3 py-2 text-sm text-red-600 hover:bg-red-50"
-                    >
-                      Удалить
-                    </button>
-                  </div>
+              ) : null}
+            </div>
+          ) : null}
+
+          <section className="space-y-4">
+            <div>
+              <label className="block text-sm font-semibold text-[var(--foreground-strong)]">
+                Условие
+                <textarea
+                  value={description}
+                  onChange={(event) => setDescription(event.target.value)}
+                  rows={4}
+                  placeholder="Текст задания для ученика"
+                  className="mt-2 w-full rounded-2xl border-2 border-[var(--card-border)] px-4 py-3 text-base outline-none focus:border-[var(--accent)]"
+                />
+              </label>
+            </div>
+
+            <div>
+              <p className="mb-2 text-sm font-semibold text-[var(--foreground-strong)]">
+                Изображение
+              </p>
+              <TaskImageDropzone
+                imageUrl={removeImage ? null : imageUrl || null}
+                uploading={uploading}
+                error={error && error.includes("загруз") ? error : undefined}
+                onUpload={handleImageUpload}
+                onRemove={() => {
+                  setRemoveImage(true);
+                  setImageUrl("");
+                }}
+              />
+            </div>
+          </section>
+
+          <section className="mt-6 space-y-4">
+            <div>
+              <p className="text-sm font-semibold text-[var(--foreground-strong)]">Проверка ответа</p>
+              <div className="mt-2 flex flex-wrap gap-2">
+                {answerTypeOptions.map((item) => (
+                  <button
+                    key={item.value}
+                    type="button"
+                    onClick={() => setAnswerType(item.value)}
+                    className={`rounded-full px-4 py-2 text-sm font-semibold ${
+                      answerType === item.value
+                        ? "bg-[var(--accent)] text-white"
+                        : "border border-[var(--card-border)] text-[var(--muted)] hover:border-[var(--accent)]"
+                    }`}
+                  >
+                    {item.label}
+                  </button>
                 ))}
               </div>
             </div>
 
-            <label className="flex items-center gap-2 text-sm text-[var(--foreground-strong)]">
-              <input
-                type="checkbox"
-                name="supportsMultipleAnswers"
-                defaultChecked={task?.supportsMultipleAnswers ?? false}
-                className="h-4 w-4 rounded border-[var(--card-border)]"
-              />
-              Несколько правильных ответов одновременно
-            </label>
-          </>
-        ) : null}
+            {answerType === "TEXT" ? (
+              <>
+                <label className="block text-sm font-semibold text-[var(--foreground-strong)]">
+                  Основной ответ
+                  <input
+                    value={correctAnswer}
+                    onChange={(event) => setCorrectAnswer(event.target.value)}
+                    placeholder="125"
+                    className="touch-target mt-2 w-full rounded-2xl border-2 border-[var(--card-border)] px-4 py-3 text-base outline-none focus:border-[var(--accent)]"
+                  />
+                </label>
 
-        {answerType === "CHOICE" ? (
-          <div>
-            <div className="flex items-center justify-between gap-3">
-              <p className="text-sm font-semibold text-[var(--foreground-strong)]">
-                Варианты ответа
-              </p>
-              <button
-                type="button"
-                onClick={() =>
-                  setChoiceOptions((items) => [...items, { text: "", isCorrect: false }])
-                }
-                className="text-sm font-semibold text-[var(--accent)] hover:underline"
-              >
-                + Вариант
-              </button>
-            </div>
-            <div className="mt-2 space-y-2">
-              {choiceOptions.map((item, index) => (
-                <div key={index} className="flex items-center gap-2">
+                <div>
+                  <div className="flex items-center justify-between gap-3">
+                    <p className="text-sm font-semibold text-[var(--foreground-strong)]">
+                      Альтернативные ответы
+                    </p>
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setAlternatives((items) => [...items, { answerText: "", explanation: "" }])
+                      }
+                      className="text-sm font-semibold text-[var(--accent)] hover:underline"
+                    >
+                      + Добавить
+                    </button>
+                  </div>
+                  {alternatives.length > 0 ? (
+                    <div className="mt-2 space-y-2">
+                      {alternatives.map((item, index) => (
+                        <div key={index} className="grid gap-2 sm:grid-cols-[1fr_1fr_auto]">
+                          <input
+                            value={item.answerText}
+                            onChange={(event) =>
+                              setAlternatives((items) =>
+                                items.map((alt, altIndex) =>
+                                  altIndex === index
+                                    ? { ...alt, answerText: event.target.value }
+                                    : alt,
+                                ),
+                              )
+                            }
+                            placeholder="Альтернативный ответ"
+                            className="touch-target rounded-2xl border-2 border-[var(--card-border)] px-4 py-2 text-sm outline-none focus:border-[var(--accent)]"
+                          />
+                          <input
+                            value={item.explanation}
+                            onChange={(event) =>
+                              setAlternatives((items) =>
+                                items.map((alt, altIndex) =>
+                                  altIndex === index
+                                    ? { ...alt, explanation: event.target.value }
+                                    : alt,
+                                ),
+                              )
+                            }
+                            placeholder="Пояснение"
+                            className="touch-target rounded-2xl border-2 border-[var(--card-border)] px-4 py-2 text-sm outline-none focus:border-[var(--accent)]"
+                          />
+                          <button
+                            type="button"
+                            onClick={() =>
+                              setAlternatives((items) =>
+                                items.filter((_, altIndex) => altIndex !== index),
+                              )
+                            }
+                            className="rounded-full px-3 py-2 text-sm text-red-600 hover:bg-red-50"
+                          >
+                            ×
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  ) : null}
+                </div>
+
+                <label className="flex items-center gap-2 text-sm text-[var(--foreground-strong)]">
                   <input
                     type="checkbox"
-                    checked={item.isCorrect}
-                    onChange={(event) =>
-                      setChoiceOptions((items) =>
-                        items.map((option, optionIndex) =>
-                          optionIndex === index
-                            ? { ...option, isCorrect: event.target.checked }
-                            : option,
-                        ),
-                      )
-                    }
-                    className="h-4 w-4"
+                    checked={supportsMultipleAnswers}
+                    onChange={(event) => setSupportsMultipleAnswers(event.target.checked)}
+                    className="h-4 w-4 rounded border-[var(--card-border)]"
                   />
-                  <input
-                    value={item.text}
-                    onChange={(event) =>
-                      setChoiceOptions((items) =>
-                        items.map((option, optionIndex) =>
-                          optionIndex === index
-                            ? { ...option, text: event.target.value }
-                            : option,
-                        ),
-                      )
-                    }
-                    placeholder={`Вариант ${index + 1}`}
-                    className="touch-target min-w-0 flex-1 rounded-2xl border-2 border-[var(--card-border)] px-4 py-2 text-sm outline-none focus:border-[var(--accent)]"
-                  />
+                  Несколько правильных ответов
+                </label>
+              </>
+            ) : null}
+
+            {answerType === "CHOICE" ? (
+              <div>
+                <div className="flex items-center justify-between gap-3">
+                  <p className="text-sm font-semibold text-[var(--foreground-strong)]">
+                    Варианты
+                  </p>
                   <button
                     type="button"
                     onClick={() =>
-                      setChoiceOptions((items) =>
-                        items.filter((_, optionIndex) => optionIndex !== index),
-                      )
+                      setChoiceOptions((items) => [...items, { text: "", isCorrect: false }])
                     }
-                    className="rounded-full px-3 py-2 text-sm text-red-600 hover:bg-red-50"
+                    className="text-sm font-semibold text-[var(--accent)] hover:underline"
                   >
-                    ×
+                    + Вариант
                   </button>
                 </div>
-              ))}
-            </div>
-          </div>
-        ) : null}
-
-        {answerType === "IMAGE" ? (
-          <p className="rounded-2xl bg-[var(--background-soft)] px-4 py-3 text-sm text-[var(--muted)]">
-            Ученик отправит фото в качестве ответа. Автопроверка будет добавлена на следующем
-            этапе.
-          </p>
-        ) : null}
-
-        <label className="block text-sm font-semibold text-[var(--foreground-strong)]">
-          Подсказка (необязательно)
-          <textarea
-            name="hint"
-            rows={3}
-            defaultValue={task?.hint ?? ""}
-            placeholder="Воспользуйтесь свойствами степеней..."
-            className="mt-2 w-full rounded-2xl border-2 border-[var(--card-border)] px-4 py-3 text-base font-normal outline-none focus:border-[var(--accent)]"
-          />
-        </label>
-
-        <div>
-          <p className="text-sm font-semibold text-[var(--foreground-strong)]">
-            Изображение задания
-          </p>
-          {imageUrl && !removeImage ? (
-            <div className="mt-2 overflow-hidden rounded-2xl border border-[var(--card-border)]">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src={imageUrl} alt="Изображение задания" className="max-h-64 w-full object-contain" />
-            </div>
-          ) : null}
-          <div className="mt-2 flex flex-wrap gap-3">
-            <label className="touch-target cursor-pointer rounded-full border-2 border-[var(--card-border)] px-4 py-2 text-sm font-semibold text-[var(--foreground-strong)] hover:border-[var(--accent)]">
-              {uploading ? "Загрузка…" : "Загрузить изображение"}
-              <input
-                type="file"
-                accept="image/jpeg,image/png,image/webp"
-                className="hidden"
-                onChange={(event) => {
-                  const file = event.target.files?.[0];
-                  if (file) {
-                    void handleImageUpload(file);
-                  }
-                }}
-              />
-            </label>
-            {imageUrl && !removeImage ? (
-              <button
-                type="button"
-                onClick={() => {
-                  setRemoveImage(true);
-                  setImageUrl("");
-                }}
-                className="touch-target rounded-full px-4 py-2 text-sm font-semibold text-red-600 hover:bg-red-50"
-              >
-                Убрать изображение
-              </button>
+                <div className="mt-2 space-y-2">
+                  {choiceOptions.map((item, index) => (
+                    <div key={index} className="flex items-center gap-2">
+                      <input
+                        type="checkbox"
+                        checked={item.isCorrect}
+                        onChange={(event) =>
+                          setChoiceOptions((items) =>
+                            items.map((option, optionIndex) =>
+                              optionIndex === index
+                                ? { ...option, isCorrect: event.target.checked }
+                                : option,
+                            ),
+                          )
+                        }
+                        className="h-4 w-4"
+                        title="Правильный вариант"
+                      />
+                      <input
+                        value={item.text}
+                        onChange={(event) =>
+                          setChoiceOptions((items) =>
+                            items.map((option, optionIndex) =>
+                              optionIndex === index
+                                ? { ...option, text: event.target.value }
+                                : option,
+                            ),
+                          )
+                        }
+                        placeholder={`Вариант ${index + 1}`}
+                        className="touch-target min-w-0 flex-1 rounded-2xl border-2 border-[var(--card-border)] px-4 py-2 text-sm outline-none focus:border-[var(--accent)]"
+                      />
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setChoiceOptions((items) =>
+                            items.filter((_, optionIndex) => optionIndex !== index),
+                          )
+                        }
+                        className="rounded-full px-3 py-2 text-sm text-red-600 hover:bg-red-50"
+                      >
+                        ×
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              </div>
             ) : null}
-          </div>
-        </div>
 
-        {error ? (
-          <p className="rounded-2xl bg-red-50 px-4 py-3 text-sm text-red-700">{error}</p>
-        ) : null}
+            {answerType === "IMAGE" ? (
+              <p className="rounded-2xl bg-[var(--background-soft)] px-4 py-3 text-sm text-[var(--muted)]">
+                Ученик отправит фото в качестве ответа.
+              </p>
+            ) : null}
+          </section>
 
-        <div className="flex flex-wrap gap-3 pt-2">
-          <button
-            type="submit"
-            disabled={saving || uploading}
-            className="touch-target rounded-full bg-[var(--accent)] px-5 py-3 text-sm font-semibold text-white hover:bg-[var(--accent-hover)] disabled:opacity-60"
-          >
-            {saving ? "Сохраняем…" : mode === "create" ? "Создать задание" : "Сохранить"}
-          </button>
+          <details className="mt-6 rounded-2xl border border-[var(--card-border)] bg-[var(--background)] px-4 py-3">
+            <summary className="cursor-pointer text-sm font-semibold text-[var(--foreground-strong)]">
+              Дополнительно — подсказка
+            </summary>
+            <textarea
+              value={hint}
+              onChange={(event) => setHint(event.target.value)}
+              rows={3}
+              placeholder="Подсказка для ученика (необязательно)"
+              className="mt-3 w-full rounded-2xl border-2 border-[var(--card-border)] bg-white px-4 py-3 text-sm outline-none focus:border-[var(--accent)]"
+            />
+          </details>
+
+          {error && !error.includes("загруз") ? (
+            <p className="mt-4 rounded-2xl bg-red-50 px-4 py-3 text-sm text-red-700">{error}</p>
+          ) : null}
+        </form>
+      )}
+
+      <div className="sticky bottom-0 border-t border-[var(--card-border)] bg-white/95 px-4 py-3 backdrop-blur sm:px-6 sm:py-4">
+        <div className="flex flex-wrap gap-3">
+          {tab === "edit" ? (
+            <button
+              type="submit"
+              form="task-editor-form"
+              disabled={saving || uploading}
+              className="touch-target rounded-full bg-[var(--accent)] px-5 py-3 text-sm font-semibold text-white hover:bg-[var(--accent-hover)] disabled:opacity-60"
+            >
+              {saving ? "Сохраняем…" : mode === "create" ? "Создать" : "Сохранить"}
+            </button>
+          ) : null}
           {mode === "edit" && task ? (
             <button
               type="button"
-              onClick={() => void handleDelete()}
+              onClick={() => setDeleteOpen(true)}
               className="touch-target rounded-full border-2 border-red-200 px-5 py-3 text-sm font-semibold text-red-600 hover:bg-red-50"
             >
-              Удалить задание
+              Удалить
             </button>
           ) : null}
         </div>
-      </form>
+      </div>
+
+      <RoomDialog open={deleteOpen} title="Удалить задание?" onClose={() => setDeleteOpen(false)}>
+        <div className="space-y-4">
+          <p className="text-sm text-[var(--muted)]">
+            Задание «{task?.title ?? title}» будет удалено без возможности восстановления.
+          </p>
+          <div className="flex flex-wrap gap-3">
+            <button
+              type="button"
+              onClick={() => void handleDelete()}
+              className="touch-target rounded-full bg-red-600 px-5 py-3 text-sm font-semibold text-white hover:bg-red-700"
+            >
+              Удалить
+            </button>
+            <button
+              type="button"
+              onClick={() => setDeleteOpen(false)}
+              className="touch-target rounded-full border-2 border-[var(--card-border)] px-5 py-3 text-sm font-semibold"
+            >
+              Отмена
+            </button>
+          </div>
+        </div>
+      </RoomDialog>
     </div>
   );
 }

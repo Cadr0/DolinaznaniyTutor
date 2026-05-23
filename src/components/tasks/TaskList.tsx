@@ -21,12 +21,9 @@ type TaskListProps = {
   onCreateTask: () => void;
 };
 
-const answerTypeLabel: Record<TaskAnswerType, string> = {
-  TEXT: "Текст",
-  CHOICE: "Выбор",
-  IMAGE: "Фото",
-};
+import { answerTypeShortLabel } from "@/lib/task-labels";
 
+/** @deprecated Use MaterialsNavigator instead */
 export function TaskList({
   locale,
   tasks,
@@ -101,7 +98,7 @@ export function TaskList({
                       {task.title}
                     </p>
                     <p className="text-xs text-[var(--muted)]">
-                      {answerTypeLabel[task.answerType]}
+                      {answerTypeShortLabel[task.answerType]}
                       {task.imageUrl ? " · есть изображение" : ""}
                     </p>
                   </button>

@@ -2,6 +2,10 @@
 
 import { useMemo, useState } from "react";
 import { CopyToRoomModal } from "@/components/marketplace/CopyToRoomModal";
+import {
+  MarketplaceTaskPreview,
+  type MarketplaceTaskDetail,
+} from "@/components/marketplace/MarketplaceTaskPreview";
 import { TagBadges } from "@/components/marketplace/TagPicker";
 import { RoomDialog } from "@/components/rooms/RoomDialog";
 import { fetchMarketplaceTopicDetail } from "@/app/[locale]/(app)/dashboard/marketplace/actions";
@@ -16,20 +20,13 @@ type TopicItem = {
   _count: { tasks: number };
 };
 
-type TaskPreview = {
-  id: string;
-  title: string;
-  description: string | null;
-  imageUrl: string | null;
-};
-
 type TopicDetail = {
   id: string;
   title: string;
   description: string | null;
   tags: string[];
   tutor: { name: string; email: string };
-  tasks: TaskPreview[];
+  tasks: MarketplaceTaskDetail[];
 };
 
 type RoomOption = {
@@ -45,6 +42,32 @@ type MarketplacePanelProps = {
   preselectedRoomId?: string | null;
 };
 
+function formatTaskText(text: string): string {
+  return text.replace(/\\r\\n/g, "\n").replace(/\\n/g, "\n").replace(/\r\n/g, "\n");
+}
+
+function taskPreviewLine(task: MarketplaceTaskDetail): string {
+  const parts: string[] = [];
+
+  if (task.description) {
+    parts.push(formatTaskText(task.description));
+  }
+
+  if (task.imageUrl) {
+    parts.push("📷 есть изображение");
+  }
+
+  if (task.answerType === "CHOICE" && task.choiceOptions.length > 0) {
+    parts.push(`${task.choiceOptions.length} вариантов`);
+  }
+
+  if (task.answerType === "TEXT" && task.alternativeAnswers.length > 0) {
+    parts.push(`${task.alternativeAnswers.length} альт. ответов`);
+  }
+
+  return parts.join(" · ");
+}
+
 export function MarketplacePanel({
   locale,
   topics,
@@ -55,6 +78,7 @@ export function MarketplacePanel({
   const [search, setSearch] = useState("");
   const [activeTags, setActiveTags] = useState<string[]>([]);
   const [detailTopic, setDetailTopic] = useState<TopicDetail | null>(null);
+  const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null);
   const [detailOpen, setDetailOpen] = useState(false);
   const [loadingDetail, setLoadingDetail] = useState(false);
 
@@ -74,15 +98,27 @@ export function MarketplacePanel({
     });
   }, [topics, search, activeTags]);
 
+  const selectedTask = useMemo(
+    () => detailTopic?.tasks.find((task) => task.id === selectedTaskId) ?? null,
+    [detailTopic, selectedTaskId],
+  );
+
   function toggleTagFilter(tag: string) {
     setActiveTags((current) =>
       current.includes(tag) ? current.filter((item) => item !== tag) : [...current, tag],
     );
   }
 
+  function closeDetail() {
+    setDetailOpen(false);
+    setDetailTopic(null);
+    setSelectedTaskId(null);
+  }
+
   async function openDetail(topicId: string) {
     setLoadingDetail(true);
     setDetailOpen(true);
+    setSelectedTaskId(null);
 
     try {
       const detail = await fetchMarketplaceTopicDetail(topicId);
@@ -196,34 +232,51 @@ export function MarketplacePanel({
 
       <RoomDialog
         open={detailOpen}
-        title={detailTopic?.title ?? "Тема"}
-        onClose={() => {
-          setDetailOpen(false);
-          setDetailTopic(null);
-        }}
+        title={selectedTask?.title ?? detailTopic?.title ?? "Тема"}
+        maxWidthClass={selectedTask ? "max-w-3xl" : "max-w-2xl"}
+        maxHeightClass="max-h-[min(92dvh,880px)]"
+        onBack={selectedTask ? () => setSelectedTaskId(null) : undefined}
+        onClose={closeDetail}
       >
         {loadingDetail ? (
           <p className="text-sm text-[var(--muted)]">Загрузка…</p>
+        ) : selectedTask ? (
+          <MarketplaceTaskPreview task={selectedTask} />
         ) : detailTopic ? (
-          <div>
+          <div className="flex min-h-[min(70vh,640px)] flex-col">
             {detailTopic.description ? (
-              <p className="mb-4 text-sm text-[var(--muted)]">{detailTopic.description}</p>
+              <p className="mb-4 shrink-0 text-sm text-[var(--muted)]">{detailTopic.description}</p>
             ) : null}
-            <TagBadges tags={detailTopic.tags} />
-            <ul className="mt-4 max-h-64 space-y-2 overflow-y-auto">
-              {detailTopic.tasks.map((task) => (
-                <li
-                  key={task.id}
-                  className="rounded-xl border border-[var(--card-border)] bg-[var(--background)] px-3 py-2 text-sm"
-                >
-                  <p className="font-semibold text-[var(--foreground-strong)]">{task.title}</p>
-                  {task.description ? (
-                    <p className="mt-1 text-xs text-[var(--muted)]">{task.description}</p>
-                  ) : null}
-                </li>
-              ))}
+            <div className="shrink-0">
+              <TagBadges tags={detailTopic.tags} />
+            </div>
+            <p className="mt-4 shrink-0 text-xs font-semibold uppercase tracking-wide text-[var(--muted)]">
+              Задания ({detailTopic.tasks.length})
+            </p>
+            <ul className="mt-2 min-h-0 flex-1 space-y-2 overflow-y-auto pr-1">
+              {detailTopic.tasks.map((task) => {
+                const preview = taskPreviewLine(task);
+
+                return (
+                  <li key={task.id}>
+                    <button
+                      type="button"
+                      onClick={() => setSelectedTaskId(task.id)}
+                      className="w-full rounded-xl border border-[var(--card-border)] bg-[var(--background)] px-3 py-2 text-left text-sm transition hover:border-[var(--accent)] hover:bg-white"
+                    >
+                      <p className="font-semibold text-[var(--foreground-strong)]">{task.title}</p>
+                      {preview ? (
+                        <p className="mt-1 line-clamp-2 text-xs text-[var(--muted)]">{preview}</p>
+                      ) : null}
+                      <p className="mt-2 text-xs font-semibold text-[var(--accent)]">
+                        Открыть задание →
+                      </p>
+                    </button>
+                  </li>
+                );
+              })}
             </ul>
-            <div className="mt-4">
+            <div className="mt-4 shrink-0 pt-2">
               <CopyToRoomModal
                 locale={locale}
                 topicId={detailTopic.id}

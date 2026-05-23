@@ -84,7 +84,7 @@ docker run --rm --network dolinaznaniy_app \
   -e LEGACY_UPLOADS_DIR=/work/old-bd/uploads/tasks \
   -v "$(pwd)":/work -w /work \
   -v dolinaznaniy_uploads_data:/work/uploads \
-  node:22-alpine sh -c "npm ci && npm run ensure:platform-user && npm run import:legacy-tasks && npm run publish:legacy-topics"
+  node:22-alpine sh -c "npm install && npx prisma generate && npm run ensure:platform-user && npm run import:legacy-tasks && npm run publish:legacy-topics"
 ```
 
 Проверка: `/dashboard/marketplace` — темы от «Долина знаний».

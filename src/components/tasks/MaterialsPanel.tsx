@@ -3,18 +3,9 @@
 import { useRouter } from "@/i18n/navigation";
 import type { TaskAnswerType } from "@prisma/client";
 import { TaskEditor } from "@/components/tasks/TaskEditor";
-import { TaskList } from "@/components/tasks/TaskList";
-import { TopicList } from "@/components/tasks/TopicList";
+import { MaterialsNavigator } from "@/components/tasks/MaterialsNavigator";
+import type { TopicFormData } from "@/components/tasks/TopicForm";
 import type { TaskWithDetails } from "@/lib/tasks";
-
-type Topic = {
-  id: string;
-  title: string;
-  description: string | null;
-  tags: string[];
-  isPublished: boolean;
-  _count: { tasks: number };
-};
 
 type TaskListItem = {
   id: string;
@@ -27,7 +18,7 @@ type TaskListItem = {
 
 type MaterialsPanelProps = {
   locale: string;
-  topics: Topic[];
+  topics: TopicFormData[];
   tasks: TaskListItem[];
   selectedTopicId: string | null;
   selectedTaskId: string | null;
@@ -78,28 +69,22 @@ export function MaterialsPanel({
           Банк заданий
         </h1>
         <p className="mt-2 max-w-2xl text-[var(--muted)]">
-          Создавайте темы и задания — позже их можно будет назначать ученикам в комнатах.
+          Создавайте темы и задания — перетащите картинку в конструктор или посмотрите предпросмотр
+          перед публикацией.
         </p>
       </div>
 
-      <div className="grid gap-6 lg:grid-cols-[minmax(0,340px)_minmax(0,1fr)]">
-        <div className="space-y-6">
-          <TopicList
-            locale={locale}
-            topics={topics}
-            selectedTopicId={selectedTopicId}
-            onSelectTopic={goToTopic}
-          />
-          {selectedTopicId ? (
-            <TaskList
-              locale={locale}
-              tasks={tasks}
-              selectedTaskId={selectedTaskId}
-              onSelectTask={goToTask}
-              onCreateTask={goToNewTask}
-            />
-          ) : null}
-        </div>
+      <div className="grid gap-6 lg:grid-cols-[minmax(0,320px)_minmax(0,1fr)]">
+        <MaterialsNavigator
+          locale={locale}
+          topics={topics}
+          tasks={tasks}
+          selectedTopicId={selectedTopicId}
+          selectedTaskId={selectedTaskId}
+          onSelectTopic={goToTopic}
+          onSelectTask={goToTask}
+          onCreateTask={goToNewTask}
+        />
 
         <div>
           {showEditor ? (
@@ -118,9 +103,9 @@ export function MaterialsPanel({
               }}
             />
           ) : (
-            <div className="rounded-[2rem] border border-[var(--card-border)] bg-white p-6 shadow-[var(--shadow-card)]">
-              <p className="text-sm text-[var(--muted)]">
-                Выберите задание слева или создайте новое.
+            <div className="flex min-h-[280px] items-center justify-center rounded-[2rem] border border-dashed border-[var(--card-border)] bg-white p-6 shadow-[var(--shadow-card)]">
+              <p className="text-center text-sm text-[var(--muted)]">
+                Выберите задание слева или нажмите «+ Задание».
               </p>
             </div>
           )}
