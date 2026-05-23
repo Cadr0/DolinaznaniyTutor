@@ -93,6 +93,7 @@ export default async function HomeworkSessionPage({ params, searchParams }: Prop
       </Link>
       <div className="mt-4">
         <TaskPlayer
+          key={taskId}
           locale={locale}
           assignment={assignment}
           initialTaskId={taskId}

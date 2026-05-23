@@ -28,8 +28,8 @@ export function TaskPlayer({ locale, assignment, initialTaskId, task }: TaskPlay
   const router = useRouter();
   const [pending, startTransition] = useTransition();
 
-  const [taskId] = useState(initialTaskId);
-  const [currentTask] = useState(task);
+  const taskId = initialTaskId;
+  const currentTask = task;
   const [answerText, setAnswerText] = useState("");
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [imageUrl, setImageUrl] = useState<string | null>(null);
@@ -62,6 +62,15 @@ export function TaskPlayer({ locale, assignment, initialTaskId, task }: TaskPlay
   useEffect(() => {
     resetForm();
   }, [taskId, resetForm]);
+
+  function goToNext(nextTaskId: string | null, completed: boolean) {
+    if (completed || !nextTaskId) {
+      router.replace("/dashboard/homework");
+    } else {
+      router.replace(`/dashboard/homework/${assignment.id}?task=${nextTaskId}`);
+    }
+    router.refresh();
+  }
 
   async function handleUpload(file: File) {
     setUploading(true);
@@ -96,6 +105,7 @@ export function TaskPlayer({ locale, assignment, initialTaskId, task }: TaskPlay
   function handleSubmit() {
     startTransition(async () => {
       setError("");
+      setFeedback(null);
       try {
         const result = await submitTaskAnswerAction(locale, assignment.id, taskId, {
           answerText: answerText.trim() || undefined,
@@ -103,26 +113,12 @@ export function TaskPlayer({ locale, assignment, initialTaskId, task }: TaskPlay
           imageUrl: imageUrl ?? undefined,
         });
 
-        if (result.status === "CORRECT") {
-          setFeedback("correct");
-        } else if (result.status === "SUBMITTED") {
-          setFeedback("submitted");
-        } else {
+        if (result.status === "INCORRECT" || result.isCorrect === false) {
           setFeedback("incorrect");
           return;
         }
 
-        if (result.completed) {
-          setTimeout(() => router.push("/dashboard/homework"), 500);
-          return;
-        }
-
-        if (result.nextTaskId) {
-          setTimeout(() => {
-            router.push(`/dashboard/homework/${assignment.id}?task=${result.nextTaskId}`);
-            router.refresh();
-          }, 450);
-        }
+        goToNext(result.nextTaskId, result.completed);
       } catch (submitError) {
         setError(submitError instanceof Error ? submitError.message : "Error");
       }
@@ -141,21 +137,11 @@ export function TaskPlayer({ locale, assignment, initialTaskId, task }: TaskPlay
   }
 
   function handleSkip() {
-    if (!confirm(t("skipConfirm"))) {
-      return;
-    }
-
     startTransition(async () => {
+      setError("");
       try {
         const result = await skipTaskAction(locale, assignment.id, taskId);
-        if (result.completed) {
-          router.push("/dashboard/homework");
-          return;
-        }
-        if (result.nextTaskId) {
-          router.push(`/dashboard/homework/${assignment.id}?task=${result.nextTaskId}`);
-          router.refresh();
-        }
+        goToNext(result.nextTaskId, result.completed);
       } catch (skipError) {
         setError(skipError instanceof Error ? skipError.message : "Error");
       }
@@ -225,19 +211,9 @@ export function TaskPlayer({ locale, assignment, initialTaskId, task }: TaskPlay
           ) : null}
         </StudentTaskView>
 
-        {feedback === "correct" ? (
-          <p className="mt-4 rounded-2xl bg-emerald-50 px-4 py-3 text-sm font-semibold text-emerald-700">
-            {t("correct")}
-          </p>
-        ) : null}
         {feedback === "incorrect" ? (
           <p className="mt-4 rounded-2xl bg-red-50 px-4 py-3 text-sm font-semibold text-red-700">
             {t("incorrect")}
-          </p>
-        ) : null}
-        {feedback === "submitted" ? (
-          <p className="mt-4 rounded-2xl bg-sky-50 px-4 py-3 text-sm font-semibold text-sky-700">
-            {t("submitted")}
           </p>
         ) : null}
         {error && feedback !== "incorrect" ? (

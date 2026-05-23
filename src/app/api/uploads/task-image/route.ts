@@ -20,7 +20,11 @@ export async function POST(request: Request) {
     const url = await saveTaskImage(file);
     return NextResponse.json({ url });
   } catch (error) {
-    const message = error instanceof Error ? error.message : "Не удалось загрузить файл";
+    const raw = error instanceof Error ? error.message : "Не удалось загрузить файл";
+    const message =
+      raw.includes("EACCES") || raw.includes("permission denied")
+        ? "Не удалось сохранить фото на сервере. Попробуйте позже."
+        : raw;
     return NextResponse.json({ error: message }, { status: 400 });
   }
 }
