@@ -67,7 +67,8 @@ echo "==> Migrate..."
 timeout "$MIGRATE_TIMEOUT" $COMPOSE run --rm migrate
 
 echo "==> Start services..."
-$COMPOSE up -d --wait --remove-orphans
+$COMPOSE up -d --remove-orphans
+sleep 12
 
 mkdir -p .deploy
 printf '{"commit":"%s","commitFull":"%s","deployedAt":"%s","branch":"main","imageTag":"%s"}\n' \
