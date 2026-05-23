@@ -84,33 +84,36 @@ jobs:
           username: ${{ secrets.VDS_USER }}
           password: ${{ secrets.VDS_PASSWORD }}
           command_timeout: 10m
+          debug: true
           envs: GHCR_TOKEN
           script_stop: true
           script: |
-            set -e
+            set -euxo pipefail
             if [ -z "${GHCR_TOKEN:-}" ]; then
               echo "ERROR: GHCR_PAT secret is not set"
               exit 1
             fi
             APP_DIR=/opt/dolinaznaniy
+            REPO_URL="https://github.com/Cadr0/DolinaznaniyTutor.git"
             mkdir -p "$APP_DIR"
             cd "$APP_DIR"
-            REPO_URL="https://github.com/Cadr0/DolinaznaniyTutor.git"
-            if [ ! -d .git ]; then
+            if ! command -v git >/dev/null 2>&1; then
               apt-get update -qq
               apt-get install -y -qq git
-              git clone --branch main --depth 1 "$REPO_URL" .
-            else
-              git remote set-url origin "$REPO_URL"
-              git fetch origin main --depth 1
-              git reset --hard origin/main
             fi
+            if [ ! -d .git ]; then
+              echo "==> git init in existing app dir"
+              git init
+            fi
+            git remote set-url origin "$REPO_URL" 2>/dev/null || git remote add origin "$REPO_URL"
+            git fetch origin main --depth 1
+            git reset --hard FETCH_HEAD
             if [ ! -f infra/deploy.sh ]; then
               echo "ERROR: infra/deploy.sh not found in $(pwd)"
-              ls -la
+              ls -la infra || ls -la
               exit 1
             fi
-            chmod +x infra/deploy.sh
+            chmod +x infra/git-sync.sh infra/deploy.sh 2>/dev/null || chmod +x infra/deploy.sh
             export IMAGE_TAG=${{ github.sha }}
             export GHCR_USER=cadr0
             bash infra/deploy.sh
