@@ -1,5 +1,8 @@
 "use client";
 
+import { useEffect } from "react";
+import { createPortal } from "react-dom";
+
 type RoomDialogProps = {
   open: boolean;
   title: string;
@@ -7,6 +10,7 @@ type RoomDialogProps = {
   onBack?: () => void;
   maxWidthClass?: string;
   maxHeightClass?: string;
+  zIndexClass?: string;
   children: React.ReactNode;
 };
 
@@ -17,18 +21,34 @@ export function RoomDialog({
   onBack,
   maxWidthClass = "max-w-md",
   maxHeightClass = "max-h-[90dvh]",
+  zIndexClass = "z-50",
   children,
 }: RoomDialogProps) {
-  if (!open) {
+  useEffect(() => {
+    if (!open) {
+      return;
+    }
+
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+
+    return () => {
+      document.body.style.overflow = previousOverflow;
+    };
+  }, [open]);
+
+  if (!open || typeof document === "undefined") {
     return null;
   }
 
-  return (
-    <div className="fixed inset-0 z-50 flex items-end justify-center p-3 sm:items-center sm:p-6">
-      <button
-        type="button"
-        aria-label="Закрыть"
-        className="absolute inset-0 bg-[rgba(42,62,71,0.35)]"
+  return createPortal(
+    <div
+      className={`fixed inset-0 ${zIndexClass} flex items-end justify-center p-3 sm:items-center sm:p-6`}
+    >
+      <div
+        role="presentation"
+        aria-hidden="true"
+        className="dialog-scrim absolute inset-0 backdrop-blur-[2px]"
         onClick={onClose}
       />
       <div
@@ -66,6 +86,7 @@ export function RoomDialog({
         </div>
         <div className="min-h-0 flex-1 overflow-y-auto">{children}</div>
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 }

@@ -8,7 +8,7 @@ type OnboardingModalProps = {
 
 export function OnboardingModal({ locale, userName, isTutor }: OnboardingModalProps) {
   return (
-    <div className="fixed inset-0 z-50 flex items-end justify-center bg-[rgba(42,62,71,0.35)] p-4 backdrop-blur-[2px] sm:items-center">
+    <div className="fixed inset-0 z-50 flex items-end justify-center dialog-scrim p-4 backdrop-blur-[2px] sm:items-center">
       <div
         className="w-full max-w-lg rounded-[2rem] border border-[var(--card-border)] bg-white p-5 shadow-[var(--shadow-card)] sm:p-8"
         role="dialog"

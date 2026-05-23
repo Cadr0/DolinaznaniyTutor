@@ -53,7 +53,12 @@ export function CopyToRoomModal({
         Добавить в комнату
       </button>
 
-      <RoomDialog open={open} title="Добавить в комнату" onClose={() => setOpen(false)}>
+      <RoomDialog
+        open={open}
+        title="Добавить в комнату"
+        zIndexClass="z-[60]"
+        onClose={() => setOpen(false)}
+      >
         <p className="-mt-2 mb-4 text-sm text-[var(--muted)]">
           Тема «{topicTitle}» будет скопирована в выбранную комнату.
         </p>

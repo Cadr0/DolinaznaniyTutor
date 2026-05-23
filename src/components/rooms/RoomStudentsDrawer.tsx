@@ -41,7 +41,7 @@ export function RoomStudentsDrawer({ students }: RoomStudentsDrawerProps) {
           <button
             type="button"
             aria-label="Закрыть"
-            className="absolute inset-0 bg-[rgba(42,62,71,0.25)]"
+            className="dialog-scrim absolute inset-0 backdrop-blur-[2px]"
             onClick={() => setOpen(false)}
           />
           <aside className="absolute inset-y-0 right-0 flex w-full max-w-md flex-col border-l border-[var(--card-border)] bg-white shadow-[0_0_40px_rgba(42,62,71,0.12)]">
