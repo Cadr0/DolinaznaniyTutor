@@ -108,6 +108,10 @@ jobs:
             git remote set-url origin "$REPO_URL" 2>/dev/null || git remote add origin "$REPO_URL"
             git fetch origin main --depth 1
             git reset --hard FETCH_HEAD
+            if command -v nginx >/dev/null 2>&1; then
+              echo "==> Repair nginx upload limit before deploy"
+              bash infra/nginx-repair.sh || true
+            fi
             if [ ! -f infra/deploy.sh ]; then
               echo "ERROR: infra/deploy.sh not found in $(pwd)"
               ls -la infra || ls -la

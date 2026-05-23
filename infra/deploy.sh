@@ -44,14 +44,8 @@ DEPLOYED_AT=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
 echo "==> Deploy target: GIT_COMMIT=${GIT_COMMIT} IMAGE_TAG=${IMAGE_TAG}"
 
 echo "==> Nginx upload limit..."
-if command -v nginx >/dev/null 2>&1 && [ -f infra/nginx/upload-limit.conf ]; then
-  mkdir -p /etc/nginx/conf.d
-  cp infra/nginx/upload-limit.conf /etc/nginx/conf.d/upload-limit.conf
-  if nginx -t; then
-    systemctl reload nginx
-  else
-    echo "WARN: nginx config test failed; upload limit not applied."
-  fi
+if command -v nginx >/dev/null 2>&1 && [ -f infra/nginx-repair.sh ]; then
+  bash infra/nginx-repair.sh || echo "WARN: nginx upload limit not applied."
 fi
 
 echo "==> GHCR login..."
