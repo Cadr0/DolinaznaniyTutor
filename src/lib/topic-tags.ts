@@ -24,7 +24,7 @@ export const SUGGESTED_TOPIC_TAGS = [
 ] as const;
 
 const KEYWORD_TAGS: [RegExp, string][] = [
-  [/задание\s*\d+/i, "ЕГЭ"],
+  [/задание\s*\d+/i, "ОГЭ"],
   [/степен/i, "Степени"],
   [/корн/i, "Корни"],
   [/дроб/i, "Дроби"],
@@ -41,7 +41,7 @@ const KEYWORD_TAGS: [RegExp, string][] = [
 
 export function inferTagsFromTopicTitle(title: string, description?: string | null): string[] {
   const text = `${title} ${description ?? ""}`;
-  const tags = new Set<string>(["ЕГЭ", "Математика"]);
+  const tags = new Set<string>(["ОГЭ", "Математика"]);
 
   for (const [pattern, tag] of KEYWORD_TAGS) {
     if (pattern.test(text)) {
@@ -50,6 +50,20 @@ export function inferTagsFromTopicTitle(title: string, description?: string | nu
   }
 
   return [...tags];
+}
+
+/** Tags for platform catalog topics (Долина знаний legacy import). */
+export function normalizePlatformCatalogTags(
+  title: string,
+  description: string | null | undefined,
+  existingTags: string[] = [],
+): string[] {
+  const base =
+    existingTags.length > 0
+      ? existingTags
+      : inferTagsFromTopicTitle(title, description);
+
+  return normalizeTags(base.map((tag) => (tag === "ЕГЭ" ? "ОГЭ" : tag)));
 }
 
 export function parseTagsInput(raw: string): string[] {

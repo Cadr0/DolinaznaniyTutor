@@ -136,6 +136,10 @@ export async function unpublishTopic(tutorId: string, topicId: string) {
   });
 }
 
+/**
+ * Copies a published marketplace topic into a room as an immutable snapshot.
+ * RoomTopic/RoomTask rows are independent — later edits to TaskTopic do not propagate.
+ */
 export async function copyTopicToRoom(tutorId: string, topicId: string, roomId: string) {
   const room = await prisma.room.findFirst({
     where: { id: roomId, ownerId: tutorId },
@@ -173,56 +177,58 @@ export async function copyTopicToRoom(tutorId: string, topicId: string, roomId: 
     select: { sortOrder: true },
   });
 
-  const roomTopic = await prisma.roomTopic.create({
-    data: {
-      roomId,
-      tutorId,
-      sourceTopicId: source.id,
-      title: source.title,
-      description: source.description,
-      tags: source.tags,
-      sortOrder: (last?.sortOrder ?? 0) + 1,
-    },
-  });
-
-  for (const task of source.tasks) {
-    const roomTask = await prisma.roomTask.create({
+  return prisma.$transaction(async (tx) => {
+    const roomTopic = await tx.roomTopic.create({
       data: {
-        roomTopicId: roomTopic.id,
-        title: task.title,
-        description: task.description,
-        answerType: task.answerType,
-        correctAnswer: task.correctAnswer,
-        hint: task.hint,
-        imageUrl: task.imageUrl,
-        sortOrder: task.sortOrder,
-        supportsMultipleAnswers: task.supportsMultipleAnswers,
+        roomId,
+        tutorId,
+        sourceTopicId: source.id,
+        title: source.title,
+        description: source.description,
+        tags: source.tags,
+        sortOrder: (last?.sortOrder ?? 0) + 1,
       },
     });
 
-    if (task.alternativeAnswers.length > 0) {
-      await prisma.roomTaskAlternativeAnswer.createMany({
-        data: task.alternativeAnswers.map((alt) => ({
-          roomTaskId: roomTask.id,
-          answerText: alt.answerText,
-          explanation: alt.explanation,
-        })),
+    for (const task of source.tasks) {
+      const roomTask = await tx.roomTask.create({
+        data: {
+          roomTopicId: roomTopic.id,
+          title: task.title,
+          description: task.description,
+          answerType: task.answerType,
+          correctAnswer: task.correctAnswer,
+          hint: task.hint,
+          imageUrl: task.imageUrl,
+          sortOrder: task.sortOrder,
+          supportsMultipleAnswers: task.supportsMultipleAnswers,
+        },
       });
+
+      if (task.alternativeAnswers.length > 0) {
+        await tx.roomTaskAlternativeAnswer.createMany({
+          data: task.alternativeAnswers.map((alt) => ({
+            roomTaskId: roomTask.id,
+            answerText: alt.answerText,
+            explanation: alt.explanation,
+          })),
+        });
+      }
+
+      if (task.choiceOptions.length > 0) {
+        await tx.roomTaskChoiceOption.createMany({
+          data: task.choiceOptions.map((option) => ({
+            roomTaskId: roomTask.id,
+            text: option.text,
+            isCorrect: option.isCorrect,
+            sortOrder: option.sortOrder,
+          })),
+        });
+      }
     }
 
-    if (task.choiceOptions.length > 0) {
-      await prisma.roomTaskChoiceOption.createMany({
-        data: task.choiceOptions.map((option) => ({
-          roomTaskId: roomTask.id,
-          text: option.text,
-          isCorrect: option.isCorrect,
-          sortOrder: option.sortOrder,
-        })),
-      });
-    }
-  }
-
-  return roomTopic;
+    return roomTopic;
+  });
 }
 
 export async function deleteRoomTopic(tutorId: string, roomTopicId: string) {

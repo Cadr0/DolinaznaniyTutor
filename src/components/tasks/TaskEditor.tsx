@@ -28,6 +28,7 @@ type TaskEditorProps = {
   selectedTopicId: string | null;
   task: TaskWithDetails | null;
   mode: "create" | "edit";
+  readOnly?: boolean;
   onCreated: (taskId: string) => void;
   onDeleted: () => void;
 };
@@ -40,6 +41,7 @@ export function TaskEditor({
   selectedTopicId,
   task,
   mode,
+  readOnly = false,
   onCreated,
   onDeleted,
 }: TaskEditorProps) {
@@ -185,6 +187,10 @@ export function TaskEditor({
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
 
+    if (readOnly) {
+      return;
+    }
+
     const validationError = validateForm();
 
     if (validationError) {
@@ -245,6 +251,13 @@ export function TaskEditor({
 
   return (
     <div className="rounded-[2rem] border border-[var(--card-border)] bg-white shadow-[var(--shadow-card)]">
+      {readOnly ? (
+        <div className="border-b border-[var(--card-border)] px-4 py-4 sm:px-6">
+          <p className="rounded-xl bg-[var(--accent-soft)] px-4 py-3 text-sm text-[var(--foreground-strong)]">
+            Тема опубликована в маркетплейсе. Снимите её с каталога, чтобы редактировать задания.
+          </p>
+        </div>
+      ) : null}
       <div className="border-b border-[var(--card-border)] px-4 py-4 sm:px-6">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <p className="text-xs font-semibold uppercase tracking-wide text-[var(--accent)]">
@@ -296,6 +309,7 @@ export function TaskEditor({
           <MarketplaceTaskPreview task={previewTask} />
         </div>
       ) : (
+        <fieldset disabled={readOnly}>
         <form id="task-editor-form" onSubmit={handleSubmit} className="px-4 py-5 sm:px-6">
           <input type="hidden" name="title" value={title} />
           <input type="hidden" name="description" value={description} />
@@ -566,11 +580,12 @@ export function TaskEditor({
             <p className="mt-4 rounded-2xl bg-red-50 px-4 py-3 text-sm text-red-700">{error}</p>
           ) : null}
         </form>
+        </fieldset>
       )}
 
       <div className="sticky bottom-0 border-t border-[var(--card-border)] bg-white/95 px-4 py-3 backdrop-blur sm:px-6 sm:py-4">
         <div className="flex flex-wrap gap-3">
-          {tab === "edit" ? (
+          {tab === "edit" && !readOnly ? (
             <button
               type="submit"
               form="task-editor-form"
@@ -580,7 +595,7 @@ export function TaskEditor({
               {saving ? "Сохраняем…" : mode === "create" ? "Создать" : "Сохранить"}
             </button>
           ) : null}
-          {mode === "edit" && task ? (
+          {mode === "edit" && task && !readOnly ? (
             <button
               type="button"
               onClick={() => setDeleteOpen(true)}

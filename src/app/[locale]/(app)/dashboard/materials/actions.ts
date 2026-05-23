@@ -7,6 +7,7 @@ import { localePath } from "@/lib/routes";
 import { requireSession } from "@/lib/session";
 import {
   assertTaskOwner,
+  assertTopicNotPublished,
   assertTopicOwner,
   getNextTaskSortOrder,
   syncTaskRelations,
@@ -92,7 +93,7 @@ export async function createTopic(locale: string, formData: FormData) {
   const title = String(formData.get("title") ?? "").trim();
   const description = String(formData.get("description") ?? "").trim();
   const tags = parseTagsFromForm(formData);
-  const isPublished = formData.get("isPublished") === "on";
+  const isPublished = formData.has("isPublished") && formData.get("isPublished") === "on";
 
   if (!title) {
     throw new Error("Введите название темы");
@@ -104,7 +105,7 @@ export async function createTopic(locale: string, formData: FormData) {
     select: { sortOrder: true },
   });
 
-  await prisma.taskTopic.create({
+  const topic = await prisma.taskTopic.create({
     data: {
       tutorId: session.user.id,
       title,
@@ -117,16 +118,20 @@ export async function createTopic(locale: string, formData: FormData) {
   });
 
   revalidateMaterials(locale);
+  return topic.id;
 }
 
 export async function updateTopic(locale: string, topicId: string, formData: FormData) {
   const session = await requireTutor(locale);
   const existing = await assertTopicOwner(session.user.id, topicId);
+  assertTopicNotPublished(existing);
 
   const title = String(formData.get("title") ?? "").trim();
   const description = String(formData.get("description") ?? "").trim();
   const tags = parseTagsFromForm(formData);
-  const isPublished = formData.get("isPublished") === "on";
+  const isPublished = formData.has("isPublished")
+    ? formData.get("isPublished") === "on"
+    : existing.isPublished;
 
   if (!title) {
     throw new Error("Введите название темы");
@@ -148,7 +153,8 @@ export async function updateTopic(locale: string, topicId: string, formData: For
 
 export async function deleteTopic(locale: string, topicId: string) {
   const session = await requireTutor(locale);
-  await assertTopicOwner(session.user.id, topicId);
+  const topic = await assertTopicOwner(session.user.id, topicId);
+  assertTopicNotPublished(topic);
 
   await prisma.taskTopic.delete({ where: { id: topicId } });
   revalidateMaterials(locale);
@@ -157,7 +163,8 @@ export async function deleteTopic(locale: string, topicId: string) {
 export async function createTask(locale: string, formData: FormData) {
   const session = await requireTutor(locale);
   const topicId = String(formData.get("topicId") ?? "");
-  await assertTopicOwner(session.user.id, topicId);
+  const topic = await assertTopicOwner(session.user.id, topicId);
+  assertTopicNotPublished(topic);
 
   const title = String(formData.get("title") ?? "").trim();
   const description = String(formData.get("description") ?? "").trim();
@@ -204,10 +211,11 @@ export async function createTask(locale: string, formData: FormData) {
 
 export async function updateTask(locale: string, taskId: string, formData: FormData) {
   const session = await requireTutor(locale);
-  await assertTaskOwner(session.user.id, taskId);
+  const task = await assertTaskOwner(session.user.id, taskId);
 
   const topicId = String(formData.get("topicId") ?? "");
-  await assertTopicOwner(session.user.id, topicId);
+  const topic = await assertTopicOwner(session.user.id, topicId);
+  assertTopicNotPublished(topic);
 
   const title = String(formData.get("title") ?? "").trim();
   const description = String(formData.get("description") ?? "").trim();
@@ -251,7 +259,9 @@ export async function updateTask(locale: string, taskId: string, formData: FormD
 
 export async function deleteTask(locale: string, taskId: string) {
   const session = await requireTutor(locale);
-  await assertTaskOwner(session.user.id, taskId);
+  const task = await assertTaskOwner(session.user.id, taskId);
+  const topic = await assertTopicOwner(session.user.id, task.topicId);
+  assertTopicNotPublished(topic);
 
   await prisma.task.delete({ where: { id: taskId } });
   revalidateMaterials(locale);
@@ -260,6 +270,8 @@ export async function deleteTask(locale: string, taskId: string) {
 export async function reorderTask(locale: string, taskId: string, direction: "up" | "down") {
   const session = await requireTutor(locale);
   const task = await assertTaskOwner(session.user.id, taskId);
+  const topic = await assertTopicOwner(session.user.id, task.topicId);
+  assertTopicNotPublished(topic);
 
   const siblings = await prisma.task.findMany({
     where: { topicId: task.topicId },

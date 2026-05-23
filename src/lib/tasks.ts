@@ -51,6 +51,12 @@ export async function assertTopicOwner(tutorId: string, topicId: string) {
   return topic;
 }
 
+export function assertTopicNotPublished(topic: { isPublished: boolean }) {
+  if (topic.isPublished) {
+    throw new Error("Снимите тему с маркетплейса, чтобы редактировать или удалить");
+  }
+}
+
 export async function assertTaskOwner(tutorId: string, taskId: string) {
   const task = await prisma.task.findFirst({
     where: { id: taskId, tutorId },

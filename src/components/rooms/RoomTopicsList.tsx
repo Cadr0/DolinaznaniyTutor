@@ -38,7 +38,7 @@ export function RoomTopicsList({ locale, roomId, topics, isTutor }: RoomTopicsLi
         <h2 className="font-display text-2xl text-[var(--foreground-strong)]">Темы</h2>
         {isTutor ? (
           <Link
-            href={`/dashboard/marketplace?roomId=${roomId}`}
+            href="/dashboard/marketplace"
             className="touch-target rounded-full bg-[var(--accent)] px-4 py-2 text-sm font-semibold text-white hover:bg-[var(--accent-hover)]"
           >
             Добавить из маркетплейса

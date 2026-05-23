@@ -24,7 +24,7 @@ export function CreateRoomModal({ locale }: CreateRoomModalProps) {
       </button>
 
       <RoomDialog open={open} title="Новая комната" onClose={() => setOpen(false)}>
-        <p className="-mt-2 mb-5 text-sm text-[var(--muted)]">
+        <p className="mb-5 text-sm leading-relaxed text-[var(--muted)]">
           Создайте комнату и отправьте ссылку ученикам.
         </p>
         <form

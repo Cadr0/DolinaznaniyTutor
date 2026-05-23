@@ -236,6 +236,9 @@ export function MarketplacePanel({
         maxWidthClass={selectedTask ? "max-w-3xl" : "max-w-2xl"}
         maxHeightClass="max-h-[min(92dvh,880px)]"
         onBack={selectedTask ? () => setSelectedTaskId(null) : undefined}
+        onBackdropClick={
+          selectedTask ? () => setSelectedTaskId(null) : closeDetail
+        }
         onClose={closeDetail}
       >
         {loadingDetail ? (

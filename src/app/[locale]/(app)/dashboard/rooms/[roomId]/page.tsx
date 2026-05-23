@@ -38,17 +38,14 @@ export default async function RoomDetailPage({ params }: Props) {
         ← Все комнаты
       </Link>
 
-      <div className="relative mt-4 rounded-[2rem] border border-[var(--card-border)] bg-white p-5 shadow-[var(--shadow-card)] sm:p-8">
-        {isTutor ? (
-          <div className="absolute right-4 top-4 sm:right-6 sm:top-6">
-            <CopyInviteButton inviteUrl={inviteUrl} variant="compact" />
-          </div>
-        ) : null}
-
-        <span className="rounded-full bg-[var(--accent-soft)] px-4 py-1.5 text-sm font-semibold text-[var(--accent)]">
-          {isTutor ? "Комната учителя" : "Комната ученика"}
-        </span>
-        <h1 className="mt-4 pr-12 font-display text-3xl text-[var(--foreground-strong)] sm:pr-14">
+      <div className="mt-4 rounded-[2rem] border border-[var(--card-border)] bg-white p-5 shadow-[var(--shadow-card)] sm:p-8">
+        <div className="flex flex-wrap items-start justify-between gap-3">
+          <span className="rounded-full bg-[var(--accent-soft)] px-4 py-1.5 text-sm font-semibold text-[var(--accent)]">
+            {isTutor ? "Комната учителя" : "Комната ученика"}
+          </span>
+          {isTutor ? <CopyInviteButton inviteUrl={inviteUrl} variant="compact" /> : null}
+        </div>
+        <h1 className="mt-4 font-display text-3xl text-[var(--foreground-strong)]">
           {room.title}
         </h1>
         {room.description ? (

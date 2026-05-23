@@ -27,29 +27,59 @@ function LinkIcon() {
 }
 
 export function CopyInviteButton({ inviteUrl, variant = "default" }: CopyInviteButtonProps) {
+  const [expanded, setExpanded] = useState(false);
   const [copied, setCopied] = useState(false);
 
   async function handleCopy() {
-    await navigator.clipboard.writeText(inviteUrl);
-    setCopied(true);
-    window.setTimeout(() => setCopied(false), 2000);
+    try {
+      await navigator.clipboard.writeText(inviteUrl);
+      setCopied(true);
+      window.setTimeout(() => setCopied(false), 2500);
+    } catch {
+      setCopied(false);
+    }
+  }
+
+  async function handleInviteClick() {
+    setExpanded(true);
+    await handleCopy();
   }
 
   if (variant === "compact") {
     return (
-      <button
-        type="button"
-        onClick={handleCopy}
-        title={copied ? "Ссылка скопирована" : "Скопировать ссылку-приглашение"}
-        aria-label={copied ? "Ссылка скопирована" : "Скопировать ссылку-приглашение"}
-        className={`inline-flex h-9 w-9 items-center justify-center rounded-xl border transition-colors ${
-          copied
-            ? "border-[var(--accent)]/30 bg-[var(--accent-soft)] text-[var(--accent)]"
-            : "border-transparent text-[var(--muted)] hover:border-[var(--card-border)] hover:bg-[var(--background-soft)] hover:text-[var(--accent)]"
-        }`}
-      >
-        <LinkIcon />
-      </button>
+      <div className="relative flex shrink-0 flex-col items-end">
+        <button
+          type="button"
+          onClick={() => void handleInviteClick()}
+          className={`touch-target inline-flex items-center gap-2 rounded-full border px-3 py-2 text-sm font-semibold transition-colors ${
+            copied
+              ? "border-[var(--accent)]/30 bg-[var(--accent-soft)] text-[var(--accent)]"
+              : "border-[var(--card-border)] bg-white text-[var(--foreground-strong)] hover:border-[var(--accent)] hover:bg-[var(--accent-soft)] hover:text-[var(--accent)]"
+          }`}
+        >
+          <LinkIcon />
+          <span>{copied ? "Скопировано" : "Пригласить учеников"}</span>
+        </button>
+
+        {expanded ? (
+          <div className="absolute right-0 top-full z-10 mt-2 w-[min(20rem,calc(100vw-2rem))] rounded-2xl border border-[var(--card-border)] bg-white p-4 shadow-[var(--shadow-card)]">
+            <p className="text-xs font-semibold uppercase tracking-wide text-[var(--muted)]">
+              Ссылка-приглашение
+            </p>
+            <p className="mt-2 break-all text-sm text-[var(--foreground-strong)]">{inviteUrl}</p>
+            <p className="mt-2 text-xs text-[var(--accent)]">
+              {copied ? "Ссылка скопирована в буфер обмена" : "Нажмите ещё раз, чтобы скопировать"}
+            </p>
+            <button
+              type="button"
+              onClick={() => void handleCopy()}
+              className="touch-target mt-3 rounded-full bg-[var(--accent)] px-4 py-2 text-xs font-semibold text-white hover:bg-[var(--accent-hover)]"
+            >
+              {copied ? "Скопировано ✓" : "Скопировать снова"}
+            </button>
+          </div>
+        ) : null}
+      </div>
     );
   }
 
@@ -59,7 +89,7 @@ export function CopyInviteButton({ inviteUrl, variant = "default" }: CopyInviteB
       <p className="mt-2 break-all text-sm text-[var(--muted)]">{inviteUrl}</p>
       <button
         type="button"
-        onClick={handleCopy}
+        onClick={() => void handleCopy()}
         className="touch-target mt-3 rounded-full bg-[var(--accent)] px-5 py-2 text-sm font-semibold text-white transition-colors hover:bg-[var(--accent-hover)]"
       >
         {copied ? "Скопировано" : "Скопировать ссылку"}

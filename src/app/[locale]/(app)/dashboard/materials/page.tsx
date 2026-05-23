@@ -27,11 +27,19 @@ export default async function MaterialsPage({ params, searchParams }: Props) {
     redirect(localePath(locale, "/dashboard"));
   }
 
-  const topics = await getTutorTopics(session.user.id);
+  const topics = (await getTutorTopics(session.user.id)).map((topic) => ({
+    id: topic.id,
+    title: topic.title,
+    description: topic.description,
+    tags: topic.tags,
+    isPublished: topic.isPublished,
+    taskCount: topic._count.tasks,
+  }));
+
   const selectedTopicId =
     query.topic && topics.some((topic) => topic.id === query.topic)
       ? query.topic
-      : topics[0]?.id ?? null;
+      : null;
 
   if (query.new === "1" && !selectedTopicId && topics.length > 0) {
     redirect(localePath(locale, `/dashboard/materials?topic=${topics[0].id}&new=1`));

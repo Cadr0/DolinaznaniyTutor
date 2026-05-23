@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "@/i18n/navigation";
 import { copyMarketplaceTopicToRoom } from "@/app/[locale]/(app)/dashboard/marketplace/actions";
 import { RoomDialog } from "@/components/rooms/RoomDialog";
+import { SelectField } from "@/components/ui/SelectField";
 
 type RoomOption = {
   id: string;
@@ -25,7 +26,7 @@ export function CopyToRoomModal({
   rooms,
   preselectedRoomId,
 }: CopyToRoomModalProps) {
-  const [open, setOpen] = useState(Boolean(preselectedRoomId));
+  const [open, setOpen] = useState(false);
   const [pending, setPending] = useState(false);
   const router = useRouter();
 
@@ -59,7 +60,7 @@ export function CopyToRoomModal({
         zIndexClass="z-[60]"
         onClose={() => setOpen(false)}
       >
-        <p className="-mt-2 mb-4 text-sm text-[var(--muted)]">
+        <p className="mb-4 text-sm leading-relaxed text-[var(--muted)]">
           Тема «{topicTitle}» будет скопирована в выбранную комнату.
         </p>
         {rooms.length === 0 ? (
@@ -70,18 +71,14 @@ export function CopyToRoomModal({
           <form onSubmit={handleSubmit} className="grid gap-4">
             <label className="block text-sm font-semibold text-[var(--foreground-strong)]">
               Комната
-              <select
-                name="roomId"
-                required
-                defaultValue={preselectedRoomId ?? rooms[0]?.id}
-                className="touch-target mt-2 w-full rounded-2xl border-2 border-[var(--card-border)] px-4 py-3 text-base font-normal outline-none focus:border-[var(--accent)]"
-              >
-                {rooms.map((room) => (
-                  <option key={room.id} value={room.id}>
-                    {room.title}
-                  </option>
-                ))}
-              </select>
+              <div className="mt-2">
+                <SelectField
+                  name="roomId"
+                  required
+                  defaultValue={preselectedRoomId ?? rooms[0]?.id}
+                  options={rooms.map((room) => ({ value: room.id, label: room.title }))}
+                />
+              </div>
             </label>
             <button
               type="submit"

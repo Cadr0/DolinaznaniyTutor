@@ -13,8 +13,9 @@ export type TopicFormData = {
 type TopicFormProps = {
   locale: string;
   topic?: TopicFormData;
-  onDone: () => void;
-  onSubmit: (locale: string, formData: FormData) => Promise<void>;
+  hidePublish?: boolean;
+  onDone: (topicId?: string) => void;
+  onSubmit: (locale: string, formData: FormData) => Promise<string | void>;
   onDelete?: () => void;
   labels?: {
     title: string;
@@ -40,6 +41,7 @@ const defaultLabels = {
 export function TopicForm({
   locale,
   topic,
+  hidePublish = false,
   onDone,
   onSubmit,
   onDelete,
@@ -50,8 +52,8 @@ export function TopicForm({
   return (
     <form
       action={async (formData) => {
-        await onSubmit(locale, formData);
-        onDone();
+        const topicId = await onSubmit(locale, formData);
+        onDone(typeof topicId === "string" ? topicId : undefined);
       }}
       className="grid gap-4"
     >
@@ -76,15 +78,17 @@ export function TopicForm({
         />
       </label>
       <TagPicker defaultTags={topic?.tags ?? []} />
-      <label className="flex items-center gap-2 text-sm font-semibold text-[var(--foreground-strong)]">
-        <input
-          type="checkbox"
-          name="isPublished"
-          defaultChecked={topic?.isPublished ?? false}
-          className="h-4 w-4 rounded border-[var(--card-border)]"
-        />
-        {labels.publish}
-      </label>
+      {!hidePublish ? (
+        <label className="flex items-center gap-2 text-sm font-semibold text-[var(--foreground-strong)]">
+          <input
+            type="checkbox"
+            name="isPublished"
+            defaultChecked={topic?.isPublished ?? false}
+            className="h-4 w-4 rounded border-[var(--card-border)]"
+          />
+          {labels.publish}
+        </label>
+      ) : null}
       <div className="flex flex-wrap gap-3">
         <button
           type="submit"

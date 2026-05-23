@@ -1,11 +1,18 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import { useRouter } from "@/i18n/navigation";
 import type { TaskAnswerType } from "@prisma/client";
+import { toggleTopicPublish } from "@/app/[locale]/(app)/dashboard/materials/actions";
 import { TaskEditor } from "@/components/tasks/TaskEditor";
-import { MaterialsNavigator } from "@/components/tasks/MaterialsNavigator";
-import type { TopicFormData } from "@/components/tasks/TopicForm";
+import { MaterialsTaskNavigator } from "@/components/tasks/MaterialsTaskNavigator";
+import {
+  MaterialsTopicGrid,
+  type TopicCardData,
+} from "@/components/tasks/MaterialsTopicGrid";
+import { TagBadges } from "@/components/marketplace/TagPicker";
 import type { TaskWithDetails } from "@/lib/tasks";
+import { isTopicReadyForMarketplace } from "@/lib/topic-readiness";
 
 type TaskListItem = {
   id: string;
@@ -18,7 +25,7 @@ type TaskListItem = {
 
 type MaterialsPanelProps = {
   locale: string;
-  topics: TopicFormData[];
+  topics: TopicCardData[];
   tasks: TaskListItem[];
   selectedTopicId: string | null;
   selectedTaskId: string | null;
@@ -36,6 +43,20 @@ export function MaterialsPanel({
   isNewTask,
 }: MaterialsPanelProps) {
   const router = useRouter();
+  const [publishing, setPublishing] = useState(false);
+
+  const selectedTopic = topics.find((topic) => topic.id === selectedTopicId) ?? null;
+  const topicLocked = selectedTopic?.isPublished ?? false;
+
+  useEffect(() => {
+    if (topicLocked && selectedTopicId) {
+      router.replace("/dashboard/materials");
+    }
+  }, [topicLocked, selectedTopicId, router]);
+
+  function goToTopics() {
+    router.push("/dashboard/materials");
+  }
 
   function goToTopic(topicId: string) {
     router.push(`/dashboard/materials?topic=${topicId}`);
@@ -58,6 +79,21 @@ export function MaterialsPanel({
   }
 
   const showEditor = isNewTask || Boolean(selectedTaskId);
+  const topicReady = selectedTopic ? isTopicReadyForMarketplace(selectedTopic) : false;
+
+  async function handlePublish() {
+    if (!selectedTopic) {
+      return;
+    }
+
+    setPublishing(true);
+    try {
+      await toggleTopicPublish(locale, selectedTopic.id, !selectedTopic.isPublished);
+      router.refresh();
+    } finally {
+      setPublishing(false);
+    }
+  }
 
   return (
     <section className="mx-auto max-w-6xl px-4 py-6 sm:px-6 sm:py-8">
@@ -74,43 +110,86 @@ export function MaterialsPanel({
         </p>
       </div>
 
-      <div className="grid gap-6 lg:grid-cols-[minmax(0,320px)_minmax(0,1fr)]">
-        <MaterialsNavigator
-          locale={locale}
-          topics={topics}
-          tasks={tasks}
-          selectedTopicId={selectedTopicId}
-          selectedTaskId={selectedTaskId}
-          onSelectTopic={goToTopic}
-          onSelectTask={goToTask}
-          onCreateTask={goToNewTask}
-        />
+      {!selectedTopicId || topicLocked ? (
+        <MaterialsTopicGrid locale={locale} topics={topics} onOpenTopic={goToTopic} />
+      ) : (
+        <>
+          <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+            <button
+              type="button"
+              onClick={goToTopics}
+              className="touch-target inline-flex items-center gap-2 rounded-full border-2 border-[var(--card-border)] px-4 py-2 text-sm font-semibold text-[var(--foreground-strong)] hover:border-[var(--accent)]"
+            >
+              ← Все темы
+            </button>
 
-        <div>
-          {showEditor ? (
-            <TaskEditor
-              key={isNewTask ? `new-${selectedTopicId}` : selectedTaskId ?? "edit"}
-              locale={locale}
-              topics={topics.map((topic) => ({ id: topic.id, title: topic.title }))}
-              selectedTopicId={selectedTopicId}
-              task={isNewTask ? null : selectedTask}
-              mode={isNewTask ? "create" : "edit"}
-              onCreated={(taskId) => goToTask(taskId)}
-              onDeleted={() => {
-                if (selectedTopicId) {
-                  router.push(`/dashboard/materials?topic=${selectedTopicId}`);
-                }
-              }}
-            />
-          ) : (
-            <div className="flex min-h-[280px] items-center justify-center rounded-[2rem] border border-dashed border-[var(--card-border)] bg-white p-6 shadow-[var(--shadow-card)]">
-              <p className="text-center text-sm text-[var(--muted)]">
-                Выберите задание слева или нажмите «+ Задание».
-              </p>
+            {topicReady ? (
+              <button
+                type="button"
+                disabled={publishing}
+                onClick={() => void handlePublish()}
+                className="touch-target rounded-full bg-[var(--accent)] px-4 py-2 text-sm font-semibold text-white hover:bg-[var(--accent-hover)] disabled:opacity-50"
+              >
+                {selectedTopic?.isPublished ? "Убрать из каталога" : "В маркетплейс"}
+              </button>
+            ) : null}
+          </div>
+
+          {selectedTopic ? (
+            <div className="mb-4 rounded-[1.5rem] border border-[var(--card-border)] bg-white px-4 py-3 shadow-[var(--shadow-card)] sm:px-5">
+              <h2 className="font-display text-2xl text-[var(--foreground-strong)]">
+                {selectedTopic.title}
+              </h2>
+              {selectedTopic.description ? (
+                <p className="mt-1 text-sm text-[var(--muted)]">{selectedTopic.description}</p>
+              ) : null}
+              {selectedTopic.tags.length > 0 ? (
+                <div className="mt-2">
+                  <TagBadges tags={selectedTopic.tags} />
+                </div>
+              ) : null}
             </div>
-          )}
-        </div>
-      </div>
+          ) : null}
+
+          <div className="grid gap-6 lg:grid-cols-[minmax(0,320px)_minmax(0,1fr)]">
+            <MaterialsTaskNavigator
+              locale={locale}
+              topicTitle={selectedTopic?.title ?? "Тема"}
+              tasks={tasks}
+              selectedTaskId={selectedTaskId}
+              locked={topicLocked}
+              onSelectTask={goToTask}
+              onCreateTask={goToNewTask}
+            />
+
+            <div>
+              {showEditor ? (
+                <TaskEditor
+                  key={isNewTask ? `new-${selectedTopicId}` : selectedTaskId ?? "edit"}
+                  locale={locale}
+                  topics={topics.map((topic) => ({ id: topic.id, title: topic.title }))}
+                  selectedTopicId={selectedTopicId}
+                  task={isNewTask ? null : selectedTask}
+                  mode={isNewTask ? "create" : "edit"}
+                  readOnly={topicLocked}
+                  onCreated={(taskId) => goToTask(taskId)}
+                  onDeleted={() => {
+                    if (selectedTopicId) {
+                      router.push(`/dashboard/materials?topic=${selectedTopicId}`);
+                    }
+                  }}
+                />
+              ) : (
+                <div className="flex min-h-[280px] items-center justify-center rounded-[2rem] border border-dashed border-[var(--card-border)] bg-white p-6 shadow-[var(--shadow-card)]">
+                  <p className="text-center text-sm text-[var(--muted)]">
+                    Выберите задание слева или нажмите «+ Задание».
+                  </p>
+                </div>
+              )}
+            </div>
+          </div>
+        </>
+      )}
     </section>
   );
 }

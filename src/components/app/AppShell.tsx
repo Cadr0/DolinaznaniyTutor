@@ -35,6 +35,7 @@ export async function AppShell({ locale, children }: AppShellProps) {
         />
 
         <div
+          data-app-scroll-container
           className={`relative flex-1 overflow-y-auto pb-[calc(4.5rem+env(safe-area-inset-bottom))] sm:pb-0 ${
             needsOnboarding ? "pointer-events-none select-none" : ""
           }`}

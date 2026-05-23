@@ -1,5 +1,5 @@
 import { PrismaClient } from "@prisma/client";
-import { inferTagsFromTopicTitle } from "../src/lib/topic-tags";
+import { normalizePlatformCatalogTags } from "../src/lib/topic-tags";
 
 const prisma = new PrismaClient();
 
@@ -22,10 +22,11 @@ async function main() {
   let published = 0;
 
   for (const topic of topics) {
-    const tags =
-      topic.tags.length > 0
-        ? topic.tags
-        : inferTagsFromTopicTitle(topic.title, topic.description);
+    const tags = normalizePlatformCatalogTags(
+      topic.title,
+      topic.description,
+      topic.tags,
+    );
 
     await prisma.taskTopic.update({
       where: { id: topic.id },
