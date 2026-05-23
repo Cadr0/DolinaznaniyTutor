@@ -13,6 +13,7 @@ type Step = "credentials" | "code" | "reset";
 type AuthFormProps = {
   mode: Mode;
   initialRole?: Role;
+  inviteRoomSlug?: string;
   inviteRoomTitle?: string;
   lockRole?: boolean;
   inviteInvalid?: boolean;
@@ -57,6 +58,7 @@ async function postAuth<T>(path: string, body: Record<string, unknown>) {
 export function AuthForm({
   mode,
   initialRole = "STUDENT",
+  inviteRoomSlug,
   inviteRoomTitle,
   lockRole = false,
   inviteInvalid = false,
@@ -85,7 +87,7 @@ export function AuthForm({
     const response = await fetch("/api/rooms/join-pending", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ locale }),
+      body: JSON.stringify({ locale, room: inviteRoomSlug }),
     });
     const payload = (await response.json().catch(() => ({}))) as { redirectTo?: string };
     router.push(payload.redirectTo ?? "/dashboard");

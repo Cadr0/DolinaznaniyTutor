@@ -1,6 +1,6 @@
 import { setRequestLocale } from "next-intl/server";
 import { AuthForm } from "@/components/auth/AuthForm";
-import { findRoomByInviteSlug, setPendingRoomInvite } from "@/lib/rooms";
+import { findRoomByInviteSlug } from "@/lib/rooms";
 
 type Role = "STUDENT" | "TUTOR";
 type Props = {
@@ -15,10 +15,6 @@ export default async function RegisterPage({ params, searchParams }: Props) {
 
   const inviteRoom = roomSlug ? await findRoomByInviteSlug(roomSlug) : null;
 
-  if (inviteRoom) {
-    await setPendingRoomInvite(inviteRoom.slug);
-  }
-
   const initialRole: Role = inviteRoom
     ? "STUDENT"
     : role === "teacher" || role === "tutor"
@@ -29,6 +25,7 @@ export default async function RegisterPage({ params, searchParams }: Props) {
     <AuthForm
       mode="register"
       initialRole={initialRole}
+      inviteRoomSlug={inviteRoom?.slug}
       inviteRoomTitle={invite === "invalid" ? undefined : inviteRoom?.title}
       lockRole={Boolean(inviteRoom)}
       inviteInvalid={invite === "invalid"}

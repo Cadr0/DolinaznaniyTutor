@@ -109,8 +109,12 @@ export async function joinRoomBySlug(userId: string, slug: string) {
   return room;
 }
 
-export async function consumeRoomInvite(userId: string, locale: string) {
-  const slug = await getPendingRoomInviteSlug();
+export async function consumeRoomInvite(
+  userId: string,
+  locale: string,
+  slugOverride?: string,
+) {
+  const slug = slugOverride ?? (await getPendingRoomInviteSlug());
   if (!slug) {
     return null;
   }
