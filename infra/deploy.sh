@@ -44,14 +44,14 @@ DEPLOYED_AT=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
 echo "==> Deploy target: GIT_COMMIT=${GIT_COMMIT} IMAGE_TAG=${IMAGE_TAG}"
 
 echo "==> Nginx upload limit..."
-NGINX_SITE="/etc/nginx/sites-available/dolinaznaniy"
-if [ -f "$NGINX_SITE" ] && command -v nginx >/dev/null 2>&1; then
-  if grep -q 'client_max_body_size' "$NGINX_SITE"; then
-    sed -i 's/client_max_body_size[^;]*;/client_max_body_size 10M;/g' "$NGINX_SITE"
+if command -v nginx >/dev/null 2>&1 && [ -f infra/nginx/upload-limit.conf ]; then
+  mkdir -p /etc/nginx/conf.d
+  cp infra/nginx/upload-limit.conf /etc/nginx/conf.d/upload-limit.conf
+  if nginx -t; then
+    systemctl reload nginx
   else
-    sed -i '/server_name/ a\    client_max_body_size 10M;' "$NGINX_SITE"
+    echo "WARN: nginx config test failed; upload limit not applied."
   fi
-  nginx -t && systemctl reload nginx
 fi
 
 echo "==> GHCR login..."
