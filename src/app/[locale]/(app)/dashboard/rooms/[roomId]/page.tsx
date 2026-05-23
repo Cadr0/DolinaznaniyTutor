@@ -1,10 +1,13 @@
 import { notFound } from "next/navigation";
 import { Link } from "@/i18n/navigation";
 import { setRequestLocale } from "next-intl/server";
+import { getTranslations } from "next-intl/server";
 import { CopyInviteButton } from "@/components/rooms/CopyInviteButton";
+import { RoomStudentsSection } from "@/components/rooms/RoomStudentsSection";
 import { RoomTopicsList } from "@/components/rooms/RoomTopicsList";
 import { buildRoomInviteUrl, ensureAsciiRoomSlug, getRoomForUser } from "@/lib/rooms";
 import { getRoomTopics } from "@/lib/marketplace-topics";
+import { getStudentAssignments } from "@/lib/student-assignments";
 import { requireSession } from "@/lib/session";
 
 type Props = {
@@ -26,8 +29,22 @@ export default async function RoomDetailPage({ params }: Props) {
   const { room, isTutor, isStudent } = access;
   const slug = isTutor ? await ensureAsciiRoomSlug(room.id, room.slug) : room.slug;
   const inviteUrl = buildRoomInviteUrl(slug);
-  const students = room.members.filter((member) => member.role === "STUDENT");
+  const students = room.members
+    .filter((member) => member.role === "STUDENT")
+    .map((member) => ({
+      id: member.user.id,
+      name: member.user.profile?.displayName ?? member.user.name,
+      email: member.user.email,
+    }));
   const roomTopics = await getRoomTopics(room.id);
+
+  const studentAssignments = isStudent
+    ? (await getStudentAssignments(session.user.id)).filter(
+        (assignment) => assignment.roomId === room.id,
+      )
+    : [];
+
+  const t = isStudent ? await getTranslations("app.homeworkPage") : null;
 
   return (
     <section className="mx-auto max-w-6xl px-4 py-6 sm:px-6 sm:py-8">
@@ -57,35 +74,12 @@ export default async function RoomDetailPage({ params }: Props) {
         ) : null}
       </div>
 
-      <div className="mt-6 rounded-[2rem] border border-[var(--card-border)] bg-white p-5 shadow-[var(--shadow-card)] sm:p-6">
-        <h2 className="font-display text-2xl text-[var(--foreground-strong)]">Ученики</h2>
-        {students.length === 0 ? (
-          <p className="mt-3 text-sm text-[var(--muted)]">
-            {isTutor
-              ? "Пока никто не вступил. Отправьте ссылку-приглашение."
-              : "В этой комнате пока только вы."}
-          </p>
-        ) : (
-          <ul className="mt-4 space-y-3">
-            {students.map((member) => (
-              <li
-                key={member.id}
-                className="flex items-center gap-3 rounded-[1.25rem] border border-[var(--card-border)] bg-[var(--background)] p-4"
-              >
-                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[var(--accent-soft)] text-sm font-bold text-[var(--accent)]">
-                  {member.user.name.charAt(0).toUpperCase()}
-                </div>
-                <div className="min-w-0">
-                  <p className="truncate text-sm font-semibold text-[var(--foreground-strong)]">
-                    {member.user.profile?.displayName ?? member.user.name}
-                  </p>
-                  <p className="truncate text-xs text-[var(--muted)]">{member.user.email}</p>
-                </div>
-              </li>
-            ))}
-          </ul>
-        )}
-      </div>
+      <RoomStudentsSection
+        locale={locale}
+        roomId={room.id}
+        students={students}
+        isTutor={isTutor}
+      />
 
       <RoomTopicsList
         locale={locale}
@@ -94,10 +88,33 @@ export default async function RoomDetailPage({ params }: Props) {
         isTutor={isTutor}
       />
 
-      {isStudent ? (
-        <p className="mt-6 text-sm text-[var(--muted)]">
-          Задания и домашняя работа появятся здесь позже.
-        </p>
+      {isStudent && studentAssignments.length > 0 && t ? (
+        <div className="mt-6 rounded-[2rem] border border-[var(--card-border)] bg-white p-5 shadow-[var(--shadow-card)] sm:p-6">
+          <h2 className="font-display text-2xl text-[var(--foreground-strong)]">
+            {t("myHomeworkInRoom")}
+          </h2>
+          <ul className="mt-4 space-y-2">
+            {studentAssignments.map((assignment) => (
+              <li key={assignment.id}>
+                <Link
+                  href={`/dashboard/homework/${assignment.id}`}
+                  className="flex items-center justify-between rounded-xl border border-[var(--card-border)] bg-[var(--background)] px-4 py-3 text-sm font-semibold text-[var(--accent)] hover:border-[var(--accent)]/40"
+                >
+                  <span>{assignment.topicTitle}</span>
+                  <span>
+                    {assignment.completedTasks}/{assignment.totalTasks}
+                  </span>
+                </Link>
+              </li>
+            ))}
+          </ul>
+          <Link
+            href="/dashboard/homework"
+            className="mt-4 inline-block text-sm font-semibold text-[var(--accent)] hover:underline"
+          >
+            {t("title")} →
+          </Link>
+        </div>
       ) : null}
     </section>
   );

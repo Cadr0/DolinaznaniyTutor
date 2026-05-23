@@ -15,7 +15,9 @@
     "validate:legacy-assets": "tsx scripts/validate-legacy-assets.ts",
     "ensure:platform-user": "tsx scripts/ensure-platform-user.ts",
     "publish:legacy-topics": "tsx scripts/publish-legacy-topics.ts",
-    "postinstall": "prisma generate"
+    "postinstall": "prisma generate",
+    "test:e2e": "playwright test",
+    "test:unit": "tsx --test src/lib/task-grading.test.ts"
   },
   "dependencies": {
     "@prisma/client": "^6.9.0",
@@ -28,6 +30,7 @@
     "zod": "^4.4.3"
   },
   "devDependencies": {
+    "@playwright/test": "^1.60.0",
     "@tailwindcss/postcss": "^4.1.8",
     "@types/node": "^22.15.29",
     "@types/nodemailer": "^8.0.0",

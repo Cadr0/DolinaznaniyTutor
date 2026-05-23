@@ -24,3 +24,8 @@ postgres_data/
 
 # Legacy migration assets (keep SQL locally, skip binary uploads)
 old bd/uploads/
+
+# Tests
+test-results/
+playwright-report/
+tsconfig.tsbuildinfo

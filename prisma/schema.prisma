@@ -39,6 +39,14 @@ enum TaskAnswerType {
   IMAGE
 }
 
+enum TaskProgressStatus {
+  NOT_STARTED
+  IN_PROGRESS
+  CORRECT
+  SKIPPED
+  SUBMITTED
+}
+
 model User {
   id                    String    @id @default(cuid())
   email                 String    @unique
@@ -50,9 +58,12 @@ model User {
   createdAt             DateTime  @default(now())
   updatedAt             DateTime  @updatedAt
 
-  ownedRooms       Room[]            @relation("RoomOwner")
-  roomMemberships  RoomMember[]
-  submissions      Submission[]
+  ownedRooms              Room[]                   @relation("RoomOwner")
+  roomMemberships         RoomMember[]
+  submissions             Submission[]
+  studentTopicAssignments StudentTopicAssignment[] @relation("StudentTopicAssignments")
+  tutorTopicAssignments   StudentTopicAssignment[] @relation("TutorTopicAssignments")
+  taskProgress            StudentTaskProgress[]
   marketplaceTasks MarketplaceTask[] @relation("TaskAuthor")
   taskTopics       TaskTopic[]
   bankTasks        Task[]              @relation("TaskTutor")
@@ -134,10 +145,11 @@ model Room {
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
-  owner       User         @relation("RoomOwner", fields: [ownerId], references: [id], onDelete: Cascade)
-  members     RoomMember[]
-  assignments Assignment[]
-  topics      RoomTopic[]
+  owner                   User                     @relation("RoomOwner", fields: [ownerId], references: [id], onDelete: Cascade)
+  members                 RoomMember[]
+  assignments             Assignment[]
+  topics                  RoomTopic[]
+  studentTopicAssignments StudentTopicAssignment[]
 }
 
 model RoomMember {
@@ -283,9 +295,10 @@ model RoomTopic {
   sortOrder     Int      @default(0)
   createdAt     DateTime @default(now())
 
-  room  Room       @relation(fields: [roomId], references: [id], onDelete: Cascade)
-  tutor User       @relation(fields: [tutorId], references: [id], onDelete: Cascade)
-  tasks RoomTask[]
+  room               Room                     @relation(fields: [roomId], references: [id], onDelete: Cascade)
+  tutor              User                     @relation(fields: [tutorId], references: [id], onDelete: Cascade)
+  tasks              RoomTask[]
+  studentAssignments StudentTopicAssignment[]
 
   @@index([roomId, sortOrder])
 }
@@ -306,8 +319,77 @@ model RoomTask {
   roomTopic          RoomTopic                   @relation(fields: [roomTopicId], references: [id], onDelete: Cascade)
   alternativeAnswers RoomTaskAlternativeAnswer[]
   choiceOptions      RoomTaskChoiceOption[]
+  taskAssignments    StudentTaskAssignment[]
+  taskProgress       StudentTaskProgress[]
 
   @@index([roomTopicId, sortOrder])
+}
+
+model StudentTopicAssignment {
+  id          String   @id @default(cuid())
+  roomId      String
+  studentId   String
+  roomTopicId String
+  tutorId     String
+  sortOrder   Int      @default(0)
+  assignedAt  DateTime @default(now())
+
+  room      Room                    @relation(fields: [roomId], references: [id], onDelete: Cascade)
+  student   User                    @relation("StudentTopicAssignments", fields: [studentId], references: [id], onDelete: Cascade)
+  tutor     User                    @relation("TutorTopicAssignments", fields: [tutorId], references: [id], onDelete: Cascade)
+  roomTopic RoomTopic               @relation(fields: [roomTopicId], references: [id], onDelete: Cascade)
+  taskItems StudentTaskAssignment[]
+
+  @@unique([studentId, roomTopicId])
+  @@index([roomId, studentId])
+}
+
+model StudentTaskAssignment {
+  id                       String @id @default(cuid())
+  studentTopicAssignmentId String
+  roomTaskId               String
+  sortOrder                Int    @default(0)
+
+  assignment StudentTopicAssignment @relation(fields: [studentTopicAssignmentId], references: [id], onDelete: Cascade)
+  roomTask   RoomTask               @relation(fields: [roomTaskId], references: [id], onDelete: Cascade)
+
+  @@unique([studentTopicAssignmentId, roomTaskId])
+  @@index([studentTopicAssignmentId, sortOrder])
+}
+
+model StudentTaskProgress {
+  id          String             @id @default(cuid())
+  studentId   String
+  roomTaskId  String
+  status      TaskProgressStatus @default(NOT_STARTED)
+  errorCount  Int                @default(0)
+  hintUsedAt  DateTime?
+  completedAt DateTime?
+  skippedAt   DateTime?
+  createdAt   DateTime           @default(now())
+  updatedAt   DateTime           @updatedAt
+
+  student  User                 @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  roomTask RoomTask             @relation(fields: [roomTaskId], references: [id], onDelete: Cascade)
+  attempts StudentTaskAttempt[]
+
+  @@unique([studentId, roomTaskId])
+  @@index([studentId])
+}
+
+model StudentTaskAttempt {
+  id                String   @id @default(cuid())
+  progressId        String
+  answerText        String?
+  selectedOptionIds String[] @default([])
+  imageUrl          String?
+  isCorrect         Boolean?
+  usedHint          Boolean  @default(false)
+  createdAt         DateTime @default(now())
+
+  progress StudentTaskProgress @relation(fields: [progressId], references: [id], onDelete: Cascade)
+
+  @@index([progressId, createdAt])
 }
 
 model RoomTaskAlternativeAnswer {

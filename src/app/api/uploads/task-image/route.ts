@@ -5,7 +5,7 @@ import { saveTaskImage } from "@/lib/uploads";
 export async function POST(request: Request) {
   const session = await auth.api.getSession({ headers: request.headers });
 
-  if (!session || session.user.role !== "TUTOR") {
+  if (!session || (session.user.role !== "TUTOR" && session.user.role !== "STUDENT")) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
