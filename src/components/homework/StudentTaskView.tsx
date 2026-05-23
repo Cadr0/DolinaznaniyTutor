@@ -11,10 +11,20 @@ function formatTaskText(text: string): string {
 type StudentTaskViewProps = {
   task: StudentRoomTask;
   hintRevealed?: string | null;
+  hintPending?: boolean;
+  onHintRequest?: () => void;
   children?: React.ReactNode;
+  composer?: React.ReactNode;
 };
 
-export function StudentTaskView({ task, hintRevealed, children }: StudentTaskViewProps) {
+export function StudentTaskView({
+  task,
+  hintRevealed,
+  hintPending,
+  onHintRequest,
+  children,
+  composer,
+}: StudentTaskViewProps) {
   const t = useTranslations("app.homeworkPage");
 
   return (
@@ -25,6 +35,22 @@ export function StudentTaskView({ task, hintRevealed, children }: StudentTaskVie
           <p className="mt-3 whitespace-pre-line text-sm leading-relaxed text-[var(--foreground-strong)]">
             {formatTaskText(task.description)}
           </p>
+        ) : null}
+
+        {hintRevealed ? (
+          <p className="mt-3 text-xs leading-relaxed text-[var(--muted)]">
+            <span className="font-medium text-[var(--accent)]/80">{t("hint")}: </span>
+            {formatTaskText(hintRevealed)}
+          </p>
+        ) : onHintRequest ? (
+          <button
+            type="button"
+            onClick={onHintRequest}
+            disabled={hintPending}
+            className="mt-3 text-xs text-[var(--muted)]/70 transition-colors hover:text-[var(--accent)] disabled:opacity-50"
+          >
+            {t("hint")}
+          </button>
         ) : null}
       </div>
 
@@ -39,23 +65,13 @@ export function StudentTaskView({ task, hintRevealed, children }: StudentTaskVie
         </div>
       ) : null}
 
-      <div className="rounded-2xl border border-[var(--card-border)] bg-[var(--background)] p-4">
+      <div className="rounded-[1.25rem] border border-[var(--card-border)] bg-[var(--background)] p-3 sm:p-4">
         <p className="text-xs font-semibold uppercase tracking-wide text-[var(--muted)]">
           {answerTypeFullLabel[task.answerType]}
         </p>
         {children}
+        {composer}
       </div>
-
-      {hintRevealed ? (
-        <div className="rounded-2xl border border-dashed border-[var(--accent)]/40 bg-[var(--accent-soft)]/40 p-4">
-          <p className="text-xs font-semibold uppercase tracking-wide text-[var(--accent)]">
-            {t("hint")}
-          </p>
-          <p className="mt-2 whitespace-pre-line text-sm text-[var(--foreground-strong)]">
-            {formatTaskText(hintRevealed)}
-          </p>
-        </div>
-      ) : null}
     </div>
   );
 }

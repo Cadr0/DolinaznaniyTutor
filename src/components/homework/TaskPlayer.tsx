@@ -8,8 +8,8 @@ import {
   submitTaskAnswerAction,
 } from "@/app/[locale]/(app)/dashboard/homework/actions";
 import { StudentTaskView } from "@/components/homework/StudentTaskView";
+import { TaskComposerActions } from "@/components/homework/TaskComposerActions";
 import { TaskImageDropzone } from "@/components/tasks/TaskImageDropzone";
-import { Button } from "@/components/ui/Button";
 import type { StudentTopicAssignmentSummary } from "@/lib/student-assignments";
 import type { StudentRoomTask } from "@/lib/room-tasks";
 
@@ -156,8 +156,30 @@ export function TaskPlayer({ locale, assignment, initialTaskId, task }: TaskPlay
     });
   }
 
+  function handleTextKeyDown(event: React.KeyboardEvent<HTMLTextAreaElement>) {
+    if (event.key === "Enter" && !event.shiftKey) {
+      event.preventDefault();
+      if (!pending && !uploading) {
+        handleSubmit();
+      }
+    }
+  }
+
+  const composerActions = (
+    <TaskComposerActions
+      submitLabel={t("check")}
+      skipLabel={t("skip")}
+      pending={pending}
+      uploading={uploading}
+      onSubmit={handleSubmit}
+      onSkip={handleSkip}
+    />
+  );
+
+  const isTextTask = currentTask.answerType === "TEXT";
+
   return (
-    <div className="mx-auto flex w-full max-w-xl flex-col gap-4 pb-28 sm:pb-8">
+    <div className="mx-auto flex w-full max-w-xl flex-col gap-4 pb-4 sm:pb-8">
       <div>
         <p className="text-sm font-semibold text-[var(--muted)]">{assignment.topicTitle}</p>
         <p className="mt-1 text-sm text-[var(--foreground-strong)]">
@@ -172,19 +194,37 @@ export function TaskPlayer({ locale, assignment, initialTaskId, task }: TaskPlay
       </div>
 
       <div className="rounded-[2rem] border border-[var(--card-border)] bg-white p-5 shadow-[var(--shadow-card)] sm:p-6">
-        <StudentTaskView task={currentTask} hintRevealed={hintRevealed}>
-          {currentTask.answerType === "TEXT" ? (
-            <textarea
-              value={answerText}
-              onChange={(event) => setAnswerText(event.target.value)}
-              placeholder={t("answerPlaceholder")}
-              rows={3}
-              className="mt-3 w-full resize-y rounded-2xl border-2 border-[var(--card-border)] px-4 py-3 text-sm outline-none focus:border-[var(--accent)]"
-            />
+        <StudentTaskView
+          task={currentTask}
+          hintRevealed={hintRevealed}
+          hintPending={pending}
+          onHintRequest={hintRevealed ? undefined : handleHint}
+          composer={isTextTask ? undefined : composerActions}
+        >
+          {isTextTask ? (
+            <div className="mt-2 flex items-end gap-2">
+              <textarea
+                value={answerText}
+                onChange={(event) => setAnswerText(event.target.value)}
+                onKeyDown={handleTextKeyDown}
+                placeholder={t("answerPlaceholder")}
+                rows={2}
+                className="min-h-[2.75rem] max-h-40 flex-1 resize-none rounded-2xl border-2 border-[var(--card-border)] bg-white px-3 py-2.5 text-sm outline-none transition-colors placeholder:text-[var(--muted)]/60 focus:border-[var(--accent)]"
+              />
+              <TaskComposerActions
+                layout="inline"
+                submitLabel={t("check")}
+                skipLabel={t("skip")}
+                pending={pending}
+                uploading={uploading}
+                onSubmit={handleSubmit}
+                onSkip={handleSkip}
+              />
+            </div>
           ) : null}
 
           {currentTask.answerType === "CHOICE" ? (
-            <ul className="mt-3 space-y-2">
+            <ul className="mt-2 space-y-2">
               {currentTask.choiceOptions.map((option) => {
                 const selected = selectedIds.includes(option.id);
                 return (
@@ -207,8 +247,7 @@ export function TaskPlayer({ locale, assignment, initialTaskId, task }: TaskPlay
           ) : null}
 
           {currentTask.answerType === "IMAGE" ? (
-            <div className="mt-3">
-              <p className="mb-2 text-sm text-[var(--muted)]">{t("imageSubmitHint")}</p>
+            <div className="mt-2">
               <TaskImageDropzone
                 imageUrl={imageUrl}
                 uploading={uploading}
@@ -232,37 +271,6 @@ export function TaskPlayer({ locale, assignment, initialTaskId, task }: TaskPlay
         {error && feedback !== "incorrect" ? (
           <p className="mt-4 text-sm text-red-600">{error}</p>
         ) : null}
-      </div>
-
-      <div className="fixed inset-x-0 bottom-0 z-40 border-t border-[var(--card-border)] bg-white/95 p-4 backdrop-blur-sm sm:static sm:border-0 sm:bg-transparent sm:p-0 sm:backdrop-blur-none">
-        <div className="mx-auto flex max-w-xl flex-col gap-2 sm:flex-row sm:flex-wrap">
-          <Button
-            type="button"
-            variant="secondary"
-            className="w-full sm:w-auto"
-            disabled={pending}
-            onClick={handleHint}
-          >
-            {t("hint")}
-          </Button>
-          <Button
-            type="button"
-            variant="ghost"
-            className="w-full sm:w-auto"
-            disabled={pending}
-            onClick={handleSkip}
-          >
-            {t("skip")}
-          </Button>
-          <Button
-            type="button"
-            className="w-full sm:ml-auto sm:w-auto"
-            disabled={pending || uploading}
-            onClick={handleSubmit}
-          >
-            {t("check")}
-          </Button>
-        </div>
       </div>
     </div>
   );

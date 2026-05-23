@@ -83,7 +83,7 @@ test.describe("student homework flow", () => {
     const fixture = path.join(__dirname, "fixtures", "test-photo.png");
     await fileInput.setInputFiles(fixture);
     await expect(page.getByText(/EACCES|permission denied/i)).not.toBeVisible({ timeout: 15_000 });
-    await expect(page.getByText("Загрузите фото ответа и нажмите «Проверить»")).toBeVisible();
+    await expect(page.getByRole("button", { name: "Проверить" })).toBeVisible();
   });
 
   test("progress page loads", async ({ page }) => {
