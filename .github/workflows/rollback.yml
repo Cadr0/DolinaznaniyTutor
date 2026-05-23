@@ -33,11 +33,7 @@ jobs:
             APP_DIR=/opt/dolinaznaniy
             TARGET="${{ github.event.inputs.commit }}"
             cd "$APP_DIR"
-            REPO_URL="https://github.com/Cadr0/DolinaznaniyTutor.git"
-            if [ -n "${GHCR_TOKEN:-}" ]; then
-              REPO_URL="https://x-access-token:${GHCR_TOKEN}@github.com/Cadr0/DolinaznaniyTutor.git"
-            fi
-            git remote set-url origin "$REPO_URL"
+            git remote set-url origin "https://github.com/Cadr0/DolinaznaniyTutor.git"
             git fetch origin main --depth 1
             git checkout "$TARGET"
             COMMIT_FULL=$(git rev-parse HEAD)
