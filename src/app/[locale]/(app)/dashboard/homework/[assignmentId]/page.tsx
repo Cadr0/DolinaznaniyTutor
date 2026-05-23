@@ -45,20 +45,18 @@ export default async function HomeworkSessionPage({ params, searchParams }: Prop
   }
 
   const nextTask = await getNextTaskInAssignment(assignmentId, studentId);
-  let taskId: string | undefined =
-    taskQuery ?? nextTask?.roomTaskId ?? assignment.tasks[0]?.roomTaskId;
+
+  let taskId: string | undefined;
 
   if (taskQuery) {
     const queried = assignment.tasks.find((item) => item.roomTaskId === taskQuery);
-    const done =
-      queried?.progress &&
-      ["CORRECT", "SKIPPED", "SUBMITTED"].includes(queried.progress.status);
-    if (done && nextTask && nextTask.roomTaskId !== taskQuery) {
-      redirect(localePath(locale, `/dashboard/homework/${assignmentId}?task=${nextTask.roomTaskId}`));
+    if (queried) {
+      taskId = taskQuery;
     }
-    if (done && !nextTask) {
-      taskId = undefined;
-    }
+  }
+
+  if (!taskId) {
+    taskId = nextTask?.roomTaskId ?? assignment.tasks[0]?.roomTaskId;
   }
 
   if (!taskId) {

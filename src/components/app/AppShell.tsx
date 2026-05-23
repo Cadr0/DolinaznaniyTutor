@@ -1,4 +1,4 @@
-import { getAppNav } from "@/lib/app-nav";
+import { getAppNav, getAppMobileNav } from "@/lib/app-nav";
 import { requireSession } from "@/lib/session";
 import { AppMobileHeader } from "@/components/app/AppMobileHeader";
 import { AppMobileNav } from "@/components/app/AppMobileNav";
@@ -13,6 +13,7 @@ type AppShellProps = {
 export async function AppShell({ locale, children }: AppShellProps) {
   const session = await requireSession(locale);
   const nav = getAppNav(session.user.role);
+  const mobileNav = getAppMobileNav(session.user.role);
   const isTutor = session.user.role === "TUTOR";
   const needsOnboarding = !session.user.onboardingCompletedAt;
 
@@ -46,7 +47,7 @@ export async function AppShell({ locale, children }: AppShellProps) {
           {children}
         </div>
 
-        <AppMobileNav nav={nav} />
+        <AppMobileNav nav={mobileNav} />
       </div>
 
       {needsOnboarding ? (

@@ -9,6 +9,14 @@ import { requireSession } from "@/lib/session";
 
 export type DeleteAccountState = { error: string };
 
+export async function signOutAccount(formData: FormData) {
+  const locale = String(formData.get("locale") ?? "ru");
+  await auth.api.signOut({
+    headers: await headers(),
+  });
+  redirect(localePath(locale, "/login"));
+}
+
 export async function deleteAccount(
   _prevState: DeleteAccountState,
   formData: FormData,

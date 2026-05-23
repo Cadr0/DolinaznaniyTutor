@@ -5,6 +5,7 @@ import { useFormStatus } from "react-dom";
 import { Link } from "@/i18n/navigation";
 import {
   deleteAccount,
+  signOutAccount,
   type DeleteAccountState,
 } from "@/app/[locale]/(app)/dashboard/settings/actions";
 
@@ -49,12 +50,24 @@ export function SettingsPanel({
         </div>
 
         {tab === "profile" ? (
-          <dl className="mt-6 grid gap-4 sm:grid-cols-2">
-            <InfoItem label="Почта" value={email} />
-            <InfoItem label="Роль" value={roleLabel} />
-            <InfoItem label="Имя в профиле" value={displayName ?? name} />
-            <InfoItem label="Имя в аккаунте" value={name} />
-          </dl>
+          <>
+            <dl className="mt-6 grid gap-4 sm:grid-cols-2">
+              <InfoItem label="Почта" value={email} />
+              <InfoItem label="Роль" value={roleLabel} />
+              <InfoItem label="Имя в профиле" value={displayName ?? name} />
+              <InfoItem label="Имя в аккаунте" value={name} />
+            </dl>
+
+            <div className="mt-8 border-t border-[var(--card-border)] pt-6">
+              <p className="text-sm text-[var(--muted)]">
+                Выйдите из аккаунта, чтобы войти под другой почтой на этом устройстве.
+              </p>
+              <form action={signOutAccount} className="mt-4">
+                <input type="hidden" name="locale" value={locale} />
+                <LogoutButton />
+              </form>
+            </div>
+          </>
         ) : (
           <div className="mt-6 max-w-lg">
             <p className="text-sm leading-relaxed text-[var(--muted)]">
@@ -141,6 +154,20 @@ function DeleteSubmitButton() {
       className="touch-target rounded-full bg-red-600 px-5 py-3 text-sm font-semibold text-white transition-colors hover:bg-red-700 disabled:opacity-60"
     >
       {pending ? "Удаляем…" : "Удалить аккаунт навсегда"}
+    </button>
+  );
+}
+
+function LogoutButton() {
+  const { pending } = useFormStatus();
+
+  return (
+    <button
+      type="submit"
+      disabled={pending}
+      className="touch-target rounded-full border-2 border-[var(--card-border)] bg-white px-5 py-3 text-sm font-semibold text-[var(--foreground-strong)] transition-colors hover:border-[var(--accent)] hover:text-[var(--accent)] disabled:opacity-60"
+    >
+      {pending ? "Выход…" : "Выйти из аккаунта"}
     </button>
   );
 }

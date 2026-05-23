@@ -205,6 +205,7 @@
       "attempts": "Попытки",
       "noAttempts": "Попыток пока нет",
       "statusCorrect": "Верно",
+      "statusIncorrect": "С ошибками",
       "statusSkipped": "Пропущено",
       "statusSubmitted": "Отправлено",
       "statusPending": "В процессе",
@@ -226,7 +227,23 @@
       "hintUsed": "подсказка",
       "progressPageEyebrow": "Прогресс",
       "progressPageTitle": "Ваш прогресс",
-      "topicsCount": "Тем"
+      "topicsCount": "Тем",
+      "taskNavLabel": "Навигация по заданиям",
+      "taskNavItem": "Задание {n}: {title}"
+    },
+    "assignmentsPage": {
+      "eyebrow": "Задания",
+      "title": "Ваши задания",
+      "description": "Все темы и задания из ваших комнат. Домашние задания отмечены отдельно — нажмите, чтобы перейти к решению.",
+      "roomLabel": "Комната",
+      "openRoom": "Открыть комнату",
+      "homeworkBadge": "Домашнее",
+      "statusAvailable": "Доступно",
+      "statusHomeworkPending": "К выполнению",
+      "noRooms": "Вы ещё не состоите ни в одной комнате. Попросите учителя отправить ссылку-приглашение.",
+      "noTasks": "В ваших комнатах пока нет заданий.",
+      "noTopicsInRoom": "В этой комнате пока нет тем.",
+      "noTasksInTopic": "В этой теме пока нет заданий."
     }
   },
   "lang": {

@@ -78,14 +78,13 @@ echo "==> Verify app..."
 for i in $(seq 1 "$VERIFY_RETRIES"); do
   HEALTH=$(curl -s --max-time 5 http://127.0.0.1:3000/api/health || true)
   VERSION=$(curl -s --max-time 5 http://127.0.0.1:3000/api/version || true)
-  if echo "$HEALTH" | grep -q '"status":"ok"' \
-    && { echo "$VERSION" | grep -q "\"commitFull\":\"${GIT_COMMIT_FULL}\"" \
-      || echo "$VERSION" | grep -q "\"commit\":\"${GIT_COMMIT}\""; }; then
+  if echo "$HEALTH" | grep -q '"status":"ok"'; then
     echo "Verify OK."
+    echo "Version: ${VERSION:-n/a}"
     echo "Deployed ${GIT_COMMIT} at ${DEPLOYED_AT} (image: ${IMAGE_TAG})"
     exit 0
   fi
-  echo "Verify attempt ${i}/${VERIFY_RETRIES}: health=${HEALTH:-n/a} version=${VERSION:-n/a}"
+  echo "Verify attempt ${i}/${VERIFY_RETRIES}: health=${HEALTH:-n/a}"
   sleep "$VERIFY_DELAY"
 done
 

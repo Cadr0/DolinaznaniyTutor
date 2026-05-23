@@ -163,6 +163,112 @@ export async function revokeStudentAssignment(tutorId: string, assignmentId: str
   await prisma.studentTopicAssignment.delete({ where: { id: assignmentId } });
 }
 
+export type StudentRoomOverview = {
+  id: string;
+  title: string;
+  topics: RoomTopicOverview[];
+};
+
+export type RoomTopicOverview = {
+  id: string;
+  title: string;
+  description: string | null;
+  tasks: RoomTaskOverviewItem[];
+};
+
+export type RoomTaskOverviewItem = {
+  roomTaskId: string;
+  title: string;
+  answerType: string;
+  sortOrder: number;
+  isHomework: boolean;
+  assignmentId: string | null;
+  progress: {
+    status: TaskProgressStatus;
+    errorCount: number;
+  } | null;
+};
+
+export async function getStudentRoomTaskOverview(studentId: string): Promise<StudentRoomOverview[]> {
+  const memberships = await prisma.roomMember.findMany({
+    where: { userId: studentId, role: "STUDENT" },
+    include: {
+      room: {
+        select: {
+          id: true,
+          title: true,
+          topics: {
+            orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }],
+            select: {
+              id: true,
+              title: true,
+              description: true,
+              tasks: {
+                orderBy: [{ sortOrder: "asc" }, { title: "asc" }],
+                select: {
+                  id: true,
+                  title: true,
+                  answerType: true,
+                  sortOrder: true,
+                },
+              },
+            },
+          },
+        },
+      },
+    },
+    orderBy: { joinedAt: "desc" },
+  });
+
+  const assignments = await getStudentAssignments(studentId);
+  const homeworkByTaskId = new Map<string, string>();
+  for (const assignment of assignments) {
+    for (const task of assignment.tasks) {
+      homeworkByTaskId.set(task.roomTaskId, assignment.id);
+    }
+  }
+
+  const allTaskIds = memberships.flatMap((membership) =>
+    membership.room.topics.flatMap((topic) => topic.tasks.map((task) => task.id)),
+  );
+
+  const progressRows =
+    allTaskIds.length > 0
+      ? await prisma.studentTaskProgress.findMany({
+          where: { studentId, roomTaskId: { in: allTaskIds } },
+        })
+      : [];
+
+  const progressByTaskId = new Map(progressRows.map((row) => [row.roomTaskId, row]));
+
+  return memberships.map((membership) => ({
+    id: membership.room.id,
+    title: membership.room.title,
+    topics: membership.room.topics.map((topic) => ({
+      id: topic.id,
+      title: topic.title,
+      description: topic.description,
+      tasks: topic.tasks.map((task) => {
+        const progress = progressByTaskId.get(task.id);
+        return {
+          roomTaskId: task.id,
+          title: task.title,
+          answerType: task.answerType,
+          sortOrder: task.sortOrder,
+          isHomework: homeworkByTaskId.has(task.id),
+          assignmentId: homeworkByTaskId.get(task.id) ?? null,
+          progress: progress
+            ? {
+                status: progress.status,
+                errorCount: progress.errorCount,
+              }
+            : null,
+        };
+      }),
+    })),
+  }));
+}
+
 export async function getStudentAssignments(studentId: string) {
   const assignments = await prisma.studentTopicAssignment.findMany({
     where: { studentId },

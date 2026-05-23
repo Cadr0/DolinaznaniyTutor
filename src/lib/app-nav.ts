@@ -37,6 +37,14 @@ export function getAppNav(role: UserRole | string | null | undefined): AppNavIte
   return role === "TUTOR" ? tutorNav : studentNav;
 }
 
+export function getAppMobileNav(role: UserRole | string | null | undefined): AppNavItem[] {
+  const nav = getAppNav(role);
+  if (role === "TUTOR") {
+    return nav.filter((item) => item.href !== "/dashboard/assignments");
+  }
+  return nav;
+}
+
 export function isNavActive(pathname: string, href: string) {
   if (href === "/dashboard") {
     return pathname === "/dashboard";

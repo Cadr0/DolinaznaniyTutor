@@ -9,6 +9,7 @@ import {
 } from "@/app/[locale]/(app)/dashboard/homework/actions";
 import { StudentTaskView } from "@/components/homework/StudentTaskView";
 import { TaskComposerActions } from "@/components/homework/TaskComposerActions";
+import { TaskProgressDots } from "@/components/homework/TaskProgressDots";
 import { TaskImageDropzone } from "@/components/tasks/TaskImageDropzone";
 import type { StudentTopicAssignmentSummary } from "@/lib/student-assignments";
 import type { StudentRoomTask } from "@/lib/room-tasks";
@@ -192,16 +193,25 @@ export function TaskPlayer({ locale, assignment, initialTaskId, task }: TaskPlay
   return (
     <div className="mx-auto flex w-full max-w-xl flex-col gap-4 pb-4 sm:pb-8">
       <div>
-        <p className="text-sm font-semibold text-[var(--muted)]">{assignment.topicTitle}</p>
-        <p className="mt-1 text-sm text-[var(--foreground-strong)]">
-          {t("taskOf", { current: taskIndex, total: assignment.totalTasks })}
-        </p>
+        <div className="flex items-baseline justify-between gap-3">
+          <p className="min-w-0 truncate text-sm font-semibold text-[var(--foreground-strong)]">
+            {assignment.topicTitle}
+          </p>
+          <p className="shrink-0 text-sm text-[var(--muted)]">
+            {t("taskOf", { current: taskIndex, total: assignment.totalTasks })}
+          </p>
+        </div>
         <div className="mt-3 h-2 overflow-hidden rounded-full bg-[var(--background-soft)]">
           <div
             className="h-full rounded-full bg-[var(--accent)] transition-all"
             style={{ width: `${progressPercent}%` }}
           />
         </div>
+        <TaskProgressDots
+          assignmentId={assignment.id}
+          tasks={assignment.tasks}
+          currentTaskId={taskId}
+        />
       </div>
 
       <div className="rounded-[2rem] border border-[var(--card-border)] bg-white p-5 shadow-[var(--shadow-card)] sm:p-6">
@@ -213,7 +223,7 @@ export function TaskPlayer({ locale, assignment, initialTaskId, task }: TaskPlay
           composer={isTextTask ? undefined : composerActions}
         >
           {isTextTask ? (
-            <div className="mt-2 flex items-end gap-2">
+            <div className="mt-2 flex items-center gap-2">
               <textarea
                 value={answerText}
                 onChange={(event) => setAnswerText(event.target.value)}
