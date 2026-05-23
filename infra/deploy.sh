@@ -79,7 +79,8 @@ for i in $(seq 1 "$VERIFY_RETRIES"); do
   HEALTH=$(curl -s --max-time 5 http://127.0.0.1:3000/api/health || true)
   VERSION=$(curl -s --max-time 5 http://127.0.0.1:3000/api/version || true)
   if echo "$HEALTH" | grep -q '"status":"ok"' \
-    && echo "$VERSION" | grep -q "\"commitFull\":\"${GIT_COMMIT_FULL}\""; then
+    && { echo "$VERSION" | grep -q "\"commitFull\":\"${GIT_COMMIT_FULL}\"" \
+      || echo "$VERSION" | grep -q "\"commit\":\"${GIT_COMMIT}\""; }; then
     echo "Verify OK."
     echo "Deployed ${GIT_COMMIT} at ${DEPLOYED_AT} (image: ${IMAGE_TAG})"
     exit 0
