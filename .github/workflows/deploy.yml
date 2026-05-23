@@ -105,11 +105,8 @@ jobs:
               echo "==> git init in existing app dir"
               git init
             fi
-            if git remote get-url origin >/dev/null 2>&1; then
-              git remote set-url origin "$REPO_URL"
-            else
-              git remote add origin "$REPO_URL"
-            fi
+            git remote remove origin >/dev/null 2>&1 || true
+            git remote add origin "$REPO_URL"
             git fetch origin main --depth 1
             git reset --hard FETCH_HEAD
             if command -v nginx >/dev/null 2>&1; then

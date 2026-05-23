@@ -20,11 +20,8 @@ if [ ! -d .git ]; then
   git init
 fi
 
-if git remote get-url origin >/dev/null 2>&1; then
-  git remote set-url origin "$REPO_URL"
-else
-  git remote add origin "$REPO_URL"
-fi
+git remote remove origin >/dev/null 2>&1 || true
+git remote add origin "$REPO_URL"
 
 echo "==> Fetching origin/${BRANCH}..."
 git fetch origin "$BRANCH" --depth 1
