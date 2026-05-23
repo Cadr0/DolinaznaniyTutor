@@ -12,7 +12,6 @@ export function RoleChoice() {
         title={t("studentTitle")}
         text={t("studentText")}
         action={t("studentButton")}
-        variant="primary"
       />
       <RoleCard
         href="/register?role=teacher"
@@ -20,7 +19,6 @@ export function RoleChoice() {
         title={t("tutorTitle")}
         text={t("tutorText")}
         action={t("tutorButton")}
-        variant="secondary"
       />
     </div>
   );
@@ -32,40 +30,28 @@ function RoleCard({
   title,
   text,
   action,
-  variant,
 }: {
   href: string;
   eyebrow: string;
   title: string;
   text: string;
   action: string;
-  variant: "primary" | "secondary";
 }) {
-  const isPrimary = variant === "primary";
-
   return (
     <Link
       href={href}
-      className={`group flex min-h-[11rem] flex-col rounded-[1.75rem] border-2 p-5 shadow-[var(--shadow-card)] transition-all sm:min-h-[12.5rem] sm:p-6 ${
-        isPrimary
-          ? "border-[var(--accent)] bg-white hover:bg-[var(--accent-soft)]"
-          : "border-[var(--card-border)] bg-white hover:border-[var(--accent)] hover:bg-[var(--accent-soft)]"
-      }`}
+      className="group flex min-h-[11rem] flex-col rounded-[1.75rem] border-2 border-[var(--card-border)] bg-white p-5 shadow-[var(--shadow-card)] outline-none transition-all hover:border-[var(--accent)] hover:bg-[var(--accent-soft)] focus-visible:border-[var(--accent)] focus-visible:bg-[var(--accent-soft)] focus-visible:ring-2 focus-visible:ring-[var(--accent)] focus-visible:ring-offset-2 sm:min-h-[12.5rem] sm:p-6"
     >
-      <p className="text-sm font-semibold text-[var(--accent)]">{eyebrow}</p>
+      <p className="text-sm font-semibold text-[var(--muted)] transition-colors group-hover:text-[var(--accent)] group-focus-visible:text-[var(--accent)]">
+        {eyebrow}
+      </p>
       <h2 className="mt-2 font-display text-2xl leading-tight text-[var(--foreground-strong)] sm:text-3xl">
         {title}
       </h2>
       <p className="mt-3 flex-1 text-sm leading-relaxed text-[var(--muted)] sm:text-base">
         {text}
       </p>
-      <span
-        className={`mt-4 inline-flex touch-target w-full items-center justify-center rounded-full px-5 text-sm font-semibold transition-colors sm:w-auto ${
-          isPrimary
-            ? "bg-[var(--accent)] text-white group-hover:bg-[var(--accent-hover)]"
-            : "border-2 border-[var(--accent)] text-[var(--accent)] group-hover:bg-[var(--accent)] group-hover:text-white"
-        }`}
-      >
+      <span className="mt-4 inline-flex w-full touch-target items-center justify-center rounded-full border-2 border-[var(--card-border)] bg-[var(--background-soft)] px-5 text-sm font-semibold text-[var(--foreground-strong)] transition-colors group-hover:border-[var(--accent)] group-hover:bg-[var(--accent)] group-hover:text-white group-focus-visible:border-[var(--accent)] group-focus-visible:bg-[var(--accent)] group-focus-visible:text-white sm:w-auto">
         {action}
       </span>
     </Link>

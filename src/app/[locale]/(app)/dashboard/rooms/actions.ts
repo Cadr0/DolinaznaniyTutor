@@ -1,7 +1,6 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { localePath } from "@/lib/routes";
 import { createRoomSlug, publishAssignment } from "@/lib/rooms";
@@ -44,7 +43,39 @@ export async function createRoom(locale: string, formData: FormData) {
   });
 
   revalidatePath(localePath(locale, "/dashboard/rooms"));
-  redirect(localePath(locale, `/dashboard/rooms/${room.id}`));
+}
+
+export async function updateRoom(locale: string, roomId: string, formData: FormData) {
+  const session = await requireSession(locale);
+
+  if (session.user.role !== "TUTOR") {
+    throw new Error("Только учитель может изменять комнаты");
+  }
+
+  const title = String(formData.get("title") ?? "").trim();
+  const description = String(formData.get("description") ?? "").trim();
+
+  if (!title) {
+    throw new Error("Введите название комнаты");
+  }
+
+  const room = await prisma.room.findFirst({
+    where: { id: roomId, ownerId: session.user.id },
+  });
+
+  if (!room) {
+    throw new Error("Комната не найдена");
+  }
+
+  await prisma.room.update({
+    where: { id: roomId },
+    data: {
+      title,
+      description: description || null,
+    },
+  });
+
+  revalidateRoomPaths(locale, roomId);
 }
 
 export async function createAssignment(locale: string, roomId: string, formData: FormData) {

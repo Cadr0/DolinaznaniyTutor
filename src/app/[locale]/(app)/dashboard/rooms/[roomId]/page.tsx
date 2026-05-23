@@ -2,6 +2,7 @@ import { notFound } from "next/navigation";
 import { Link } from "@/i18n/navigation";
 import { setRequestLocale } from "next-intl/server";
 import { CopyInviteButton } from "@/components/rooms/CopyInviteButton";
+import { RenameRoomButton } from "@/components/rooms/RenameRoomButton";
 import { createAssignment, publishAssignmentAction, submitAssignment } from "../actions";
 import { buildRoomInviteUrl, ensureAsciiRoomSlug, getRoomForUser } from "@/lib/rooms";
 import { requireSession } from "@/lib/session";
@@ -49,8 +50,14 @@ export default async function RoomDetailPage({ params }: Props) {
         ) : null}
 
         {isTutor ? (
-          <div className="mt-6">
+          <div className="mt-6 flex flex-wrap items-center gap-3">
             <CopyInviteButton inviteUrl={inviteUrl} />
+            <RenameRoomButton
+              locale={locale}
+              roomId={room.id}
+              title={room.title}
+              description={room.description}
+            />
           </div>
         ) : (
           <p className="mt-4 text-sm text-[var(--muted)]">Учитель: {room.owner.name}</p>
