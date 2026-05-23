@@ -39,7 +39,7 @@ function statusLabel(task: RoomTaskOverviewItem, t: Translator, tHomework: Trans
     return tHomework("statusCorrect");
   }
 
-  if (task.progress.errorCount > 0 && task.progress.status !== "CORRECT") {
+  if (task.progress.errorCount > 0) {
     return tHomework("statusIncorrect");
   }
 
