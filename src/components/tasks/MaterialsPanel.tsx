@@ -123,7 +123,7 @@ export function MaterialsPanel({
               ← Все темы
             </button>
 
-            {topicReady ? (
+            {(topicReady || selectedTopic?.isPublished) ? (
               <button
                 type="button"
                 disabled={publishing}

@@ -137,7 +137,7 @@ export function MaterialsTopicGrid({ locale, topics, onOpenTopic }: MaterialsTop
                   </button>
                 ) : null}
 
-                {ready ? (
+                {(ready || locked) ? (
                   <button
                     type="button"
                     disabled={publishingId === topic.id}
