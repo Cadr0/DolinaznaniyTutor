@@ -212,6 +212,7 @@
       "progressLink": "Progress →",
       "genericError": "Something went wrong. Please try again.",
       "uploadFailed": "Could not upload the file",
+      "uploadTooLarge": "File is too large. Maximum 5 MB — try compressing the photo.",
       "imageSubmitHint": "Upload a photo of your answer, then tap Check",
       "uploadPhotoHint": "or click to choose · JPG, PNG, WebP up to 5 MB",
       "noAssignmentsYet": "No assignments yet.",

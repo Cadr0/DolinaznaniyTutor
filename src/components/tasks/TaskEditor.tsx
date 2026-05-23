@@ -16,6 +16,7 @@ import { RoomDialog } from "@/components/rooms/RoomDialog";
 import { TaskImageDropzone } from "@/components/tasks/TaskImageDropzone";
 import type { TaskWithDetails } from "@/lib/tasks";
 import { answerTypeOptions } from "@/lib/task-labels";
+import { parseUploadResponse, uploadErrorMessage } from "@/lib/upload-client";
 
 type TopicOption = {
   id: string;
@@ -144,10 +145,16 @@ export function TaskEditor({
         method: "POST",
         body,
       });
-      const data = (await response.json()) as { url?: string; error?: string };
+      const data = await parseUploadResponse(response);
 
       if (!response.ok || !data.url) {
-        throw new Error(data.error ?? "Не удалось загрузить изображение");
+        throw new Error(
+          uploadErrorMessage(data.error, {
+            tooLarge: "Файл слишком большой (максимум 5 МБ)",
+            unauthorized: "Не удалось загрузить изображение",
+            failed: "Не удалось загрузить изображение",
+          }),
+        );
       }
 
       setImageUrl(data.url);

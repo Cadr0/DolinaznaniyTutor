@@ -43,6 +43,17 @@ DEPLOYED_AT=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
 
 echo "==> Deploy target: GIT_COMMIT=${GIT_COMMIT} IMAGE_TAG=${IMAGE_TAG}"
 
+echo "==> Nginx upload limit..."
+NGINX_SITE="/etc/nginx/sites-available/dolinaznaniy"
+if [ -f "$NGINX_SITE" ] && command -v nginx >/dev/null 2>&1; then
+  if grep -q 'client_max_body_size' "$NGINX_SITE"; then
+    sed -i 's/client_max_body_size[^;]*;/client_max_body_size 10M;/g' "$NGINX_SITE"
+  else
+    sed -i '/server_name/ a\    client_max_body_size 10M;' "$NGINX_SITE"
+  fi
+  nginx -t && systemctl reload nginx
+fi
+
 echo "==> GHCR login..."
 echo "$GHCR_TOKEN" | docker login ghcr.io -u "${GHCR_USER:-cadr0}" --password-stdin
 

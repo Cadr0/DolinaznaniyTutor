@@ -12,6 +12,7 @@ import { TaskComposerActions } from "@/components/homework/TaskComposerActions";
 import { TaskImageDropzone } from "@/components/tasks/TaskImageDropzone";
 import type { StudentTopicAssignmentSummary } from "@/lib/student-assignments";
 import type { StudentRoomTask } from "@/lib/room-tasks";
+import { parseUploadResponse, uploadErrorMessage } from "@/lib/upload-client";
 
 type TaskPlayerProps = {
   locale: string;
@@ -36,6 +37,7 @@ export function TaskPlayer({ locale, assignment, initialTaskId, task }: TaskPlay
   const [hintRevealed, setHintRevealed] = useState<string | null>(null);
   const [feedback, setFeedback] = useState<Feedback>(null);
   const [error, setError] = useState("");
+  const [uploadError, setUploadError] = useState("");
 
   const taskIndex = useMemo(() => {
     const index = assignment.tasks.findIndex((item) => item.roomTaskId === taskId);
@@ -60,6 +62,7 @@ export function TaskPlayer({ locale, assignment, initialTaskId, task }: TaskPlay
     setHintRevealed(null);
     setFeedback(null);
     setError("");
+    setUploadError("");
   }, []);
 
   useEffect(() => {
@@ -82,19 +85,27 @@ export function TaskPlayer({ locale, assignment, initialTaskId, task }: TaskPlay
 
   async function handleUpload(file: File) {
     setUploading(true);
-    setError("");
+    setUploadError("");
     try {
       const formData = new FormData();
       formData.set("file", file);
       const response = await fetch("/api/uploads/task-image", { method: "POST", body: formData });
-      const payload = (await response.json()) as { url?: string; error?: string };
+      const payload = await parseUploadResponse(response);
       if (!response.ok || !payload.url) {
-        throw new Error(payload.error ?? t("uploadFailed"));
+        throw new Error(
+          uploadErrorMessage(payload.error, {
+            tooLarge: t("uploadTooLarge"),
+            unauthorized: t("genericError"),
+            failed: t("uploadFailed"),
+          }),
+        );
       }
       setImageUrl(payload.url);
-    } catch (uploadError) {
-      setError(uploadError instanceof Error ? uploadError.message : t("uploadFailed"));
-      throw uploadError;
+    } catch (uploadFailure) {
+      const message =
+        uploadFailure instanceof Error ? uploadFailure.message : t("uploadFailed");
+      setUploadError(message);
+      throw uploadFailure;
     } finally {
       setUploading(false);
     }
@@ -251,9 +262,12 @@ export function TaskPlayer({ locale, assignment, initialTaskId, task }: TaskPlay
               <TaskImageDropzone
                 imageUrl={imageUrl}
                 uploading={uploading}
-                error={error}
+                error={uploadError}
                 onUpload={handleUpload}
-                onRemove={() => setImageUrl(null)}
+                onRemove={() => {
+                  setImageUrl(null);
+                  setUploadError("");
+                }}
                 labels={{
                   idle: t("uploadPhoto"),
                   hint: t("uploadPhotoHint"),
