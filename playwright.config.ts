@@ -25,7 +25,7 @@ export default defineConfig({
     },
     {
       name: "tutor",
-      testMatch: /homework-tutor|student-card/.spec\.ts/,
+      testMatch: [/homework-tutor\.spec\.ts/, /student-card\.spec\.ts/],
       use: {
         ...devices["Desktop Chrome"],
         storageState: path.join(authDir, "tutor.json"),
