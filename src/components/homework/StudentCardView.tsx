@@ -26,6 +26,8 @@ type StudentCardViewProps = {
   roomOptions?: { roomId: string; roomTitle: string }[];
   compact?: boolean;
   showFullPageLink?: boolean;
+  onAssignOpenChange?: (open: boolean) => void;
+  assignHandledExternally?: boolean;
 };
 
 function statusLabel(status: string, t: ReturnType<typeof useTranslations>) {
@@ -61,6 +63,8 @@ export function StudentCardView({
   roomOptions = [],
   compact = false,
   showFullPageLink = false,
+  onAssignOpenChange,
+  assignHandledExternally = false,
 }: StudentCardViewProps) {
   const t = useTranslations("app.homeworkPage");
   const tStudents = useTranslations("app.studentsPage");
@@ -187,7 +191,18 @@ export function StudentCardView({
         </div>
       ) : null}
 
-      <Button type="button" className="w-full sm:w-auto" onClick={() => setAssignOpen(true)}>
+      <Button
+        type="button"
+        className="w-full sm:w-auto"
+        onClick={() => {
+          if (assignHandledExternally) {
+            onAssignOpenChange?.(true);
+          } else {
+            setAssignOpen(true);
+            onAssignOpenChange?.(true);
+          }
+        }}
+      >
         {t("assignTitle")}
       </Button>
 
@@ -362,18 +377,21 @@ export function StudentCardView({
 
       {error ? <p className="text-sm text-red-600">{error}</p> : null}
 
-      <AssignTopicModal
-        locale={locale}
-        roomId={activeRoomId}
-        studentId={studentId}
-        studentName={displayName}
-        open={assignOpen}
-        onClose={() => {
-          setAssignOpen(false);
-          loadProgress();
-          router.refresh();
-        }}
-      />
+      {!assignHandledExternally ? (
+        <AssignTopicModal
+          locale={locale}
+          roomId={activeRoomId}
+          studentId={studentId}
+          studentName={displayName}
+          open={assignOpen}
+          onClose={() => {
+            setAssignOpen(false);
+            onAssignOpenChange?.(false);
+            loadProgress();
+            router.refresh();
+          }}
+        />
+      ) : null}
     </div>
   );
 }
