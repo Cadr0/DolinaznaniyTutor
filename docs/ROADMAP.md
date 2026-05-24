@@ -6,37 +6,49 @@
 
 - Next.js + PostgreSQL + Docker + CI/CD
 - Landing, `/api/health`, `/api/version`
-- Prisma-схема, ops, домен diary-ai.ru (ожидает DNS)
+- Prisma-схема, ops, домен diary-ai.ru
 
 ## Этап 1.5 — UI и i18n ✅
 
 - next-intl: ru + en
-- Mobile-first landing (Header, Hero, Features, CTA)
-- Design tokens, touch targets, safe-area
-- docs/DESIGN.md
+- Mobile-first landing
+- Design tokens, docs/DESIGN.md
 
-## Этап 2 — Auth (текущий)
+## Этап 2 — Auth ✅
 
-- Better Auth + SMTP (smtp.bz)
+- Better Auth + SMTP
 - Роли TUTOR | STUDENT
-- Профили, защита маршрутов
-- Формы входа — mobile-friendly
+- Профили, защита маршрутов, онбординг
 
-## Этап 3 — Комнаты
+## Этап 3 — Комнаты ✅
 
 - CRUD комнат, приглашения, список учеников
+- Drawer и страница `/dashboard/students`
 
-## Этап 4 — Задания
+## Этап 4 — Задания ✅ (основной цикл)
 
-- CRUD, Submission, feedback репетитора
+- TaskTopic → RoomTopic → StudentTopicAssignment
+- TaskPlayer (TEXT / CHOICE / IMAGE)
+- Прогресс, попытки, назначение/снятие
+- **Карточка ученика** `/dashboard/students/[id]` с логами попыток
+- **Проверка IMAGE** `/dashboard/review`
 
-## Этап 5 — Маркетплейс
+## Этап 5 — Маркетплейс ✅
 
-- Каталог, поиск, копирование в комнату
+- Каталог опубликованных тем, поиск, теги
+- Копирование в комнату
+- **Копирование из банка материалов в комнату** без публикации
 
-## Этап 6 — Прод
+## Этап 6 — Прод (текущий)
 
-- Домен diary-ai.ru (временный)
-- HTTPS после DNS
-- Мониторинг
-- Переход на dolinaznaniy.ru (позже)
+- diary-ai.ru, HTTPS, CI/CD ✅
+- Живая главная dashboard с метриками ✅
+- E2E на prod
+- Мониторинг, переход на dolinaznaniy.ru (позже)
+
+## Следующие приоритеты
+
+- Уведомления ученику о новом назначении (email)
+- E2E: полный flow assign → solve → tutor stats
+- Очистка legacy Assignment/Submission в коде
+- Модерация контента комнат (admin)

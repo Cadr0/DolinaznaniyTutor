@@ -141,34 +141,85 @@ export async function unpublishTopic(tutorId: string, topicId: string) {
  * RoomTopic/RoomTask rows are independent — later edits to TaskTopic do not propagate.
  */
 export async function copyTopicToRoom(tutorId: string, topicId: string, roomId: string) {
-  const room = await prisma.room.findFirst({
-    where: { id: roomId, ownerId: tutorId },
-  });
-
-  if (!room) {
-    throw new Error("Комната не найдена");
-  }
-
   const source = await prisma.taskTopic.findFirst({
     where: {
       id: topicId,
       isPublished: true,
       isActive: true,
     },
-    include: {
-      tasks: {
-        where: { isActive: true },
-        orderBy: [{ sortOrder: "asc" }, { title: "asc" }],
-        include: {
-          alternativeAnswers: true,
-          choiceOptions: { orderBy: { sortOrder: "asc" } },
-        },
-      },
-    },
+    include: topicIncludeForCopy,
   });
 
   if (!source) {
     throw new Error("Тема не найдена в маркетплейсе");
+  }
+
+  return copyTopicSnapshotToRoom(tutorId, roomId, source);
+}
+
+/** Copy tutor's own topic into a room without publishing to marketplace. */
+export async function copyBankTopicToRoom(tutorId: string, topicId: string, roomId: string) {
+  const source = await prisma.taskTopic.findFirst({
+    where: {
+      id: topicId,
+      tutorId,
+      isActive: true,
+    },
+    include: topicIncludeForCopy,
+  });
+
+  if (!source) {
+    throw new Error("Тема не найдена");
+  }
+
+  if (source.tasks.length === 0) {
+    throw new Error("Добавьте хотя бы одно задание в тему");
+  }
+
+  return copyTopicSnapshotToRoom(tutorId, roomId, source);
+}
+
+const topicIncludeForCopy = {
+  tasks: {
+    where: { isActive: true },
+    orderBy: [{ sortOrder: "asc" as const }, { title: "asc" as const }],
+    include: {
+      alternativeAnswers: true,
+      choiceOptions: { orderBy: { sortOrder: "asc" as const } },
+    },
+  },
+};
+
+type TopicForCopy = {
+  id: string;
+  title: string;
+  description: string | null;
+  tags: string[];
+  tasks: {
+    title: string;
+    description: string | null;
+    answerType: import("@prisma/client").TaskAnswerType;
+    correctAnswer: string | null;
+    hint: string | null;
+    imageUrl: string | null;
+    sortOrder: number;
+    supportsMultipleAnswers: boolean;
+    alternativeAnswers: { answerText: string; explanation: string | null }[];
+    choiceOptions: { text: string; isCorrect: boolean; sortOrder: number }[];
+  }[];
+};
+
+async function copyTopicSnapshotToRoom(
+  tutorId: string,
+  roomId: string,
+  source: TopicForCopy,
+) {
+  const room = await prisma.room.findFirst({
+    where: { id: roomId, ownerId: tutorId },
+  });
+
+  if (!room) {
+    throw new Error("Комната не найдена");
   }
 
   const last = await prisma.roomTopic.findFirst({

@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "@/i18n/navigation";
+import { copyBankTopicToRoomAction } from "@/app/[locale]/(app)/dashboard/materials/actions";
 import { copyMarketplaceTopicToRoom } from "@/app/[locale]/(app)/dashboard/marketplace/actions";
 import { RoomDialog } from "@/components/rooms/RoomDialog";
 import { SelectField } from "@/components/ui/SelectField";
@@ -17,6 +18,9 @@ type CopyToRoomModalProps = {
   topicTitle: string;
   rooms: RoomOption[];
   preselectedRoomId?: string | null;
+  source?: "marketplace" | "bank";
+  triggerLabel?: string;
+  buttonClassName?: string;
 };
 
 export function CopyToRoomModal({
@@ -25,6 +29,9 @@ export function CopyToRoomModal({
   topicTitle,
   rooms,
   preselectedRoomId,
+  source = "marketplace",
+  triggerLabel = "Добавить в комнату",
+  buttonClassName = "touch-target rounded-full bg-[var(--accent)] px-4 py-2 text-sm font-semibold text-white hover:bg-[var(--accent-hover)]",
 }: CopyToRoomModalProps) {
   const [open, setOpen] = useState(false);
   const [pending, setPending] = useState(false);
@@ -38,7 +45,14 @@ export function CopyToRoomModal({
     const roomId = String(formData.get("roomId") ?? "");
 
     try {
-      await copyMarketplaceTopicToRoom(locale, topicId, roomId);
+      if (source === "bank") {
+        const result = await copyBankTopicToRoomAction(locale, topicId, roomId);
+        setOpen(false);
+        router.push(`/dashboard/rooms/${result.roomId}`);
+        router.refresh();
+      } else {
+        await copyMarketplaceTopicToRoom(locale, topicId, roomId);
+      }
     } catch {
       setPending(false);
     }
@@ -46,12 +60,8 @@ export function CopyToRoomModal({
 
   return (
     <>
-      <button
-        type="button"
-        onClick={() => setOpen(true)}
-        className="touch-target rounded-full bg-[var(--accent)] px-4 py-2 text-sm font-semibold text-white hover:bg-[var(--accent-hover)]"
-      >
-        Добавить в комнату
+      <button type="button" onClick={() => setOpen(true)} className={buttonClassName}>
+        {triggerLabel}
       </button>
 
       <RoomDialog

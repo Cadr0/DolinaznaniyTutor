@@ -17,12 +17,13 @@
 
 ## Каноничная документация
 
-1. [docs/PRODUCT.md](docs/PRODUCT.md) — продукт и сущности
-2. [docs/ROADMAP.md](docs/ROADMAP.md) — этапы и приоритеты
-3. [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) — структура и техническая схема
-4. [docs/DESIGN.md](docs/DESIGN.md) — UI и UX правила
-5. [docs/DEV.md](docs/DEV.md) — локальная разработка
-6. [docs/OPS.md](docs/OPS.md) — сервер, доступы, деплой, откат, домен, CI/CD
+1. [docs/SYSTEM.md](docs/SYSTEM.md) — функционал, цикл репетитор↔ученик, аудит prod
+2. [docs/PRODUCT.md](docs/PRODUCT.md) — продукт и сущности
+3. [docs/ROADMAP.md](docs/ROADMAP.md) — этапы и приоритеты
+4. [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) — структура и техническая схема
+5. [docs/DESIGN.md](docs/DESIGN.md) — UI и UX правила
+6. [docs/DEV.md](docs/DEV.md) — локальная разработка
+7. [docs/OPS.md](docs/OPS.md) — сервер, доступы, деплой, откат, домен, CI/CD
 
 ## Базовые команды
 

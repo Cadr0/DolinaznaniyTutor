@@ -24,7 +24,7 @@ async function saveAuthState(
   await page.getByLabel("Почта").fill(email);
   await page.getByLabel("Пароль").fill(password);
   await page.getByRole("button", { name: "Войти" }).click();
-  await page.waitForURL("**/dashboard**", { timeout: 45_000 });
+  await page.waitForURL("**/dashboard**", { timeout: 45_000, waitUntil: "domcontentloaded" });
 
   fs.mkdirSync(authDir, { recursive: true });
   await context.storageState({ path: path.join(authDir, fileName) });

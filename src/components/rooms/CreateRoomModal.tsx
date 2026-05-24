@@ -6,10 +6,16 @@ import { RoomDialog } from "@/components/rooms/RoomDialog";
 
 type CreateRoomModalProps = {
   locale: string;
+  variant?: "icon" | "card";
 };
 
-export function CreateRoomModal({ locale }: CreateRoomModalProps) {
+export function CreateRoomModal({ locale, variant = "icon" }: CreateRoomModalProps) {
   const [open, setOpen] = useState(false);
+
+  const triggerClassName =
+    variant === "card"
+      ? "touch-target flex min-h-[9.5rem] w-full flex-col items-center justify-center rounded-[1.5rem] border border-dashed border-[var(--card-border)] bg-[var(--background)] px-5 py-6 text-center transition-colors hover:border-[var(--accent)]/40 hover:bg-[var(--accent-soft)]/40 sm:min-h-[10.5rem] sm:p-6"
+      : "touch-target inline-flex h-11 w-11 items-center justify-center rounded-full bg-[var(--accent)] text-2xl font-light leading-none text-white shadow-[var(--shadow-soft)] transition-colors hover:bg-[var(--accent-hover)] sm:h-12 sm:w-12";
 
   return (
     <>
@@ -18,9 +24,20 @@ export function CreateRoomModal({ locale }: CreateRoomModalProps) {
         onClick={() => setOpen(true)}
         aria-label="Добавить комнату"
         title="Добавить комнату"
-        className="touch-target inline-flex h-11 w-11 items-center justify-center rounded-full bg-[var(--accent)] text-2xl font-light leading-none text-white shadow-[var(--shadow-soft)] transition-colors hover:bg-[var(--accent-hover)] sm:h-12 sm:w-12"
+        className={triggerClassName}
       >
-        +
+        {variant === "card" ? (
+          <>
+            <span className="inline-flex h-12 w-12 items-center justify-center rounded-full bg-[var(--accent)] text-2xl font-light leading-none text-white shadow-[var(--shadow-soft)]">
+              +
+            </span>
+            <span className="mt-3 text-sm font-semibold text-[var(--foreground-strong)]">
+              Новая комната
+            </span>
+          </>
+        ) : (
+          "+"
+        )}
       </button>
 
       <RoomDialog open={open} title="Новая комната" onClose={() => setOpen(false)}>

@@ -8,6 +8,7 @@ import {
   getTutorTasksForTopic,
   getTutorTopics,
 } from "@/lib/tasks";
+import { getTutorRoomsForCopy } from "@/lib/marketplace-topics";
 
 type Props = {
   params: Promise<{ locale: string }>;
@@ -58,6 +59,8 @@ export default async function MaterialsPage({ params, searchParams }: Props) {
 
   const isNewTask = query.new === "1";
 
+  const rooms = await getTutorRoomsForCopy(session.user.id);
+
   return (
     <MaterialsPanel
       locale={locale}
@@ -67,6 +70,7 @@ export default async function MaterialsPage({ params, searchParams }: Props) {
       selectedTaskId={selectedTaskId}
       selectedTask={selectedTask}
       isNewTask={isNewTask}
+      rooms={rooms}
     />
   );
 }

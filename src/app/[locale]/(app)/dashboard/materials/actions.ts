@@ -14,15 +14,23 @@ import {
   type TaskFormAlternative,
   type TaskFormChoiceOption,
 } from "@/lib/tasks";
-import { publishTopic, unpublishTopic } from "@/lib/marketplace-topics";
+import { publishTopic, unpublishTopic, copyBankTopicToRoom } from "@/lib/marketplace-topics";
 import { normalizeTags, parseTagsInput } from "@/lib/topic-tags";
 
 function materialsPath(locale: string) {
   return localePath(locale, "/dashboard/materials");
 }
 
+function roomPath(locale: string, roomId: string) {
+  return localePath(locale, `/dashboard/rooms/${roomId}`);
+}
+
 function marketplacePath(locale: string) {
   return localePath(locale, "/dashboard/marketplace");
+}
+
+function revalidateRoom(locale: string, roomId: string) {
+  revalidatePath(roomPath(locale, roomId));
 }
 
 function revalidateMaterials(locale: string) {
@@ -301,6 +309,18 @@ export async function reorderTask(locale: string, taskId: string, direction: "up
   ]);
 
   revalidateMaterials(locale);
+}
+
+export async function copyBankTopicToRoomAction(
+  locale: string,
+  topicId: string,
+  roomId: string,
+) {
+  const session = await requireTutor(locale);
+  await copyBankTopicToRoom(session.user.id, topicId, roomId);
+  revalidateMaterials(locale);
+  revalidateRoom(locale, roomId);
+  return { ok: true as const, roomId };
 }
 
 export async function toggleTopicPublish(locale: string, topicId: string, publish: boolean) {

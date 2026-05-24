@@ -16,6 +16,7 @@ import {
   getStudentAssignments,
   getStudentProgressForTutor,
   getTaskAttemptsForTutor,
+  getTaskAttemptContextForTutor,
   revokeStudentAssignment,
 } from "@/lib/student-assignments";
 import { gradeRoomTaskAnswer } from "@/lib/task-grading";
@@ -99,6 +100,15 @@ export async function fetchTaskAttemptsAction(
   const session = await requireTutor(locale);
   await assertTutorRoomAccess(session.user.id, roomId);
   return getTaskAttemptsForTutor(session.user.id, roomId, studentId, roomTaskId);
+}
+
+export async function fetchTaskAttemptContextAction(
+  locale: string,
+  roomId: string,
+  roomTaskId: string,
+) {
+  const session = await requireTutor(locale);
+  return getTaskAttemptContextForTutor(session.user.id, roomId, roomTaskId);
 }
 
 export async function fetchStudentHomeworkAction(locale: string) {

@@ -27,7 +27,6 @@ const tutorNav: AppNavItem[] = [
   { href: "/dashboard", labelKey: "home", iconKey: "home" },
   { href: "/dashboard/students", labelKey: "students", iconKey: "students" },
   { href: "/dashboard/rooms", labelKey: "rooms", iconKey: "rooms" },
-  { href: "/dashboard/assignments", labelKey: "assignments", iconKey: "assignments" },
   { href: "/dashboard/review", labelKey: "review", iconKey: "review" },
   { href: "/dashboard/marketplace", labelKey: "marketplace", iconKey: "marketplace" },
   { href: "/dashboard/materials", labelKey: "materials", iconKey: "materials" },
@@ -38,11 +37,7 @@ export function getAppNav(role: UserRole | string | null | undefined): AppNavIte
 }
 
 export function getAppMobileNav(role: UserRole | string | null | undefined): AppNavItem[] {
-  const nav = getAppNav(role);
-  if (role === "TUTOR") {
-    return nav.filter((item) => item.href !== "/dashboard/assignments");
-  }
-  return nav;
+  return getAppNav(role);
 }
 
 export function isNavActive(pathname: string, href: string) {

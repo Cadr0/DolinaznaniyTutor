@@ -11,7 +11,7 @@ export async function login(page: Page, email: string, password: string) {
   await page.getByLabel("Почта").fill(email);
   await page.getByLabel("Пароль").fill(password);
   await page.getByRole("button", { name: "Войти" }).click();
-  await page.waitForURL("**/dashboard**", { timeout: 45_000 });
+  await page.waitForURL("**/dashboard**", { timeout: 45_000, waitUntil: "domcontentloaded" });
 }
 
 export async function loginAsTutor(page: Page) {

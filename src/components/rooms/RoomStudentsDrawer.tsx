@@ -22,7 +22,7 @@ export function RoomStudentsDrawer({ students }: RoomStudentsDrawerProps) {
       (student) =>
         student.name.toLowerCase().includes(normalized) ||
         student.email.toLowerCase().includes(normalized) ||
-        student.roomTitle.toLowerCase().includes(normalized)
+        student.roomTitle.toLowerCase().includes(normalized),
     );
   }, [query, students]);
 
@@ -88,8 +88,15 @@ export function RoomStudentsDrawer({ students }: RoomStudentsDrawerProps) {
                           </p>
                           <p className="truncate text-xs text-[var(--muted)]">{student.email}</p>
                           <Link
+                            href={`/dashboard/students/${student.id}?roomId=${student.roomId}`}
+                            className="mt-2 inline-block text-xs font-semibold text-[var(--accent)] hover:underline"
+                            onClick={() => setOpen(false)}
+                          >
+                            Карточка ученика →
+                          </Link>
+                          <Link
                             href={`/dashboard/rooms/${student.roomId}`}
-                            className="mt-1 inline-block text-xs font-semibold text-[var(--accent)] hover:underline"
+                            className="mt-1 block text-xs text-[var(--muted)] hover:underline"
                             onClick={() => setOpen(false)}
                           >
                             {student.roomTitle}

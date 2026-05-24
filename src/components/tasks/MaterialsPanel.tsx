@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "@/i18n/navigation";
 import type { TaskAnswerType } from "@prisma/client";
 import { toggleTopicPublish } from "@/app/[locale]/(app)/dashboard/materials/actions";
+import { CopyToRoomModal } from "@/components/marketplace/CopyToRoomModal";
 import { TaskEditor } from "@/components/tasks/TaskEditor";
 import { MaterialsTaskNavigator } from "@/components/tasks/MaterialsTaskNavigator";
 import {
@@ -31,6 +32,7 @@ type MaterialsPanelProps = {
   selectedTaskId: string | null;
   selectedTask: TaskWithDetails | null;
   isNewTask: boolean;
+  rooms: { id: string; title: string }[];
 };
 
 export function MaterialsPanel({
@@ -41,6 +43,7 @@ export function MaterialsPanel({
   selectedTaskId,
   selectedTask,
   isNewTask,
+  rooms,
 }: MaterialsPanelProps) {
   const router = useRouter();
   const [publishing, setPublishing] = useState(false);
@@ -124,14 +127,27 @@ export function MaterialsPanel({
             </button>
 
             {(topicReady || selectedTopic?.isPublished) ? (
-              <button
-                type="button"
-                disabled={publishing}
-                onClick={() => void handlePublish()}
-                className="touch-target rounded-full bg-[var(--accent)] px-4 py-2 text-sm font-semibold text-white hover:bg-[var(--accent-hover)] disabled:opacity-50"
-              >
-                {selectedTopic?.isPublished ? "Убрать из каталога" : "В маркетплейс"}
-              </button>
+              <div className="flex flex-wrap gap-2">
+                {topicReady && selectedTopic && tasks.length > 0 ? (
+                  <CopyToRoomModal
+                    locale={locale}
+                    topicId={selectedTopic.id}
+                    topicTitle={selectedTopic.title}
+                    rooms={rooms}
+                    source="bank"
+                    triggerLabel="В комнату"
+                    buttonClassName="touch-target rounded-full border-2 border-[var(--card-border)] bg-white px-4 py-2 text-sm font-semibold text-[var(--foreground-strong)] hover:border-[var(--accent)]"
+                  />
+                ) : null}
+                <button
+                  type="button"
+                  disabled={publishing}
+                  onClick={() => void handlePublish()}
+                  className="touch-target rounded-full bg-[var(--accent)] px-4 py-2 text-sm font-semibold text-white hover:bg-[var(--accent-hover)] disabled:opacity-50"
+                >
+                  {selectedTopic?.isPublished ? "Убрать из каталога" : "В маркетплейс"}
+                </button>
+              </div>
             ) : null}
           </div>
 

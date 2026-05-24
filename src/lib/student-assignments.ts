@@ -55,6 +55,32 @@ export type TaskAttemptRecord = {
   optionLabels: string[];
 };
 
+export type TaskAttemptContext = {
+  title: string;
+  answerType: string;
+  correctAnswer: string | null;
+  description: string | null;
+};
+
+export type TeacherStudentOverview = {
+  id: string;
+  name: string;
+  email: string;
+  rooms: { roomId: string; roomTitle: string }[];
+  totals: {
+    assignedTasks: number;
+    completedTasks: number;
+    errorTasks: number;
+    hintsUsed: number;
+    pendingReview: number;
+  };
+};
+
+export type StudentRoomOption = {
+  roomId: string;
+  roomTitle: string;
+};
+
 const COMPLETED_STATUSES: TaskProgressStatus[] = ["CORRECT", "SKIPPED", "SUBMITTED"];
 
 function isCompleted(status: TaskProgressStatus) {
@@ -497,6 +523,175 @@ export async function getTaskAttemptsForTutor(
     createdAt: attempt.createdAt,
     optionLabels: attempt.selectedOptionIds.map((id) => optionMap.get(id) ?? id),
   }));
+}
+
+export async function getTaskAttemptContextForTutor(
+  tutorId: string,
+  roomId: string,
+  roomTaskId: string,
+): Promise<TaskAttemptContext | null> {
+  const room = await prisma.room.findFirst({
+    where: { id: roomId, ownerId: tutorId },
+  });
+
+  if (!room) {
+    return null;
+  }
+
+  const task = await prisma.roomTask.findFirst({
+    where: { id: roomTaskId, roomTopic: { roomId } },
+    select: {
+      title: true,
+      answerType: true,
+      correctAnswer: true,
+      description: true,
+    },
+  });
+
+  return task;
+}
+
+export async function getStudentRoomsForTutor(
+  tutorId: string,
+  studentId: string,
+): Promise<StudentRoomOption[]> {
+  const memberships = await prisma.roomMember.findMany({
+    where: {
+      userId: studentId,
+      role: "STUDENT",
+      room: { ownerId: tutorId },
+    },
+    include: {
+      room: { select: { id: true, title: true } },
+    },
+    orderBy: { joinedAt: "asc" },
+  });
+
+  return memberships.map((membership) => ({
+    roomId: membership.room.id,
+    roomTitle: membership.room.title,
+  }));
+}
+
+export async function getTeacherStudentsOverview(
+  tutorId: string,
+): Promise<TeacherStudentOverview[]> {
+  const rooms = await prisma.room.findMany({
+    where: { ownerId: tutorId },
+    include: {
+      members: {
+        where: { role: "STUDENT" },
+        include: {
+          user: {
+            select: {
+              id: true,
+              name: true,
+              email: true,
+              profile: { select: { displayName: true } },
+            },
+          },
+        },
+      },
+    },
+    orderBy: { title: "asc" },
+  });
+
+  const byStudent = new Map<
+    string,
+    {
+      id: string;
+      name: string;
+      email: string;
+      rooms: { roomId: string; roomTitle: string }[];
+    }
+  >();
+
+  for (const room of rooms) {
+    for (const member of room.members) {
+      const existing = byStudent.get(member.user.id);
+      const roomEntry = { roomId: room.id, roomTitle: room.title };
+
+      if (existing) {
+        existing.rooms.push(roomEntry);
+      } else {
+        byStudent.set(member.user.id, {
+          id: member.user.id,
+          name: member.user.profile?.displayName ?? member.user.name,
+          email: member.user.email,
+          rooms: [roomEntry],
+        });
+      }
+    }
+  }
+
+  const studentIds = [...byStudent.keys()];
+  if (studentIds.length === 0) {
+    return [];
+  }
+
+  const assignments = await prisma.studentTopicAssignment.findMany({
+    where: { studentId: { in: studentIds }, room: { ownerId: tutorId } },
+    include: {
+      taskItems: { select: { roomTaskId: true } },
+    },
+  });
+
+  const taskIds = assignments.flatMap((assignment) =>
+    assignment.taskItems.map((item) => item.roomTaskId),
+  );
+
+  const progressRows =
+    taskIds.length > 0
+      ? await prisma.studentTaskProgress.findMany({
+          where: { studentId: { in: studentIds }, roomTaskId: { in: taskIds } },
+        })
+      : [];
+
+  const progressByStudentTask = new Map(
+    progressRows.map((row) => [`${row.studentId}:${row.roomTaskId}`, row]),
+  );
+
+  return [...byStudent.values()].map((student) => {
+    const studentAssignments = assignments.filter((a) => a.studentId === student.id);
+    let assignedTasks = 0;
+    let completedTasks = 0;
+    let errorTasks = 0;
+    let hintsUsed = 0;
+    let pendingReview = 0;
+
+    for (const assignment of studentAssignments) {
+      for (const item of assignment.taskItems) {
+        assignedTasks += 1;
+        const progress = progressByStudentTask.get(`${student.id}:${item.roomTaskId}`);
+        if (!progress) {
+          continue;
+        }
+        if (isCompleted(progress.status)) {
+          completedTasks += 1;
+        }
+        if (progress.errorCount > 0) {
+          errorTasks += 1;
+        }
+        if (progress.hintUsedAt) {
+          hintsUsed += 1;
+        }
+        if (progress.status === "SUBMITTED") {
+          pendingReview += 1;
+        }
+      }
+    }
+
+    return {
+      ...student,
+      totals: {
+        assignedTasks,
+        completedTasks,
+        errorTasks,
+        hintsUsed,
+        pendingReview,
+      },
+    };
+  });
 }
 
 export async function assertStudentOwnsTask(studentId: string, roomTaskId: string) {

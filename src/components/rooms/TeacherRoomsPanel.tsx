@@ -25,22 +25,23 @@ export function TeacherRoomsPanel({ locale, rooms, students }: TeacherRoomsPanel
         </div>
         <div className="flex items-center gap-2 sm:gap-3">
           <RoomStudentsDrawer students={students} />
-          <CreateRoomModal locale={locale} />
         </div>
       </div>
 
       <div className="mt-6 flex-1 sm:mt-8">
         {rooms.length === 0 ? (
-          <div className="flex h-full min-h-[16rem] flex-col items-center justify-center rounded-[1.5rem] border border-dashed border-[var(--card-border)] bg-[var(--background)] px-6 py-12 text-center">
+          <div className="flex h-full min-h-[16rem] flex-col items-center justify-center gap-4 rounded-[1.5rem] border border-dashed border-[var(--card-border)] bg-[var(--background)] px-6 py-12 text-center">
             <p className="text-sm text-[var(--muted)]">
-              Пока нет комнат. Нажмите «+», чтобы создать первую.
+              Пока нет комнат. Создайте первую комнату для учеников.
             </p>
+            <CreateRoomModal locale={locale} />
           </div>
         ) : (
           <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
             {rooms.map((room) => (
               <TeacherRoomCard key={room.id} locale={locale} room={room} />
             ))}
+            <CreateRoomModal locale={locale} variant="card" />
           </div>
         )}
       </div>
