@@ -158,7 +158,7 @@ export function AssignHomeworkPanel({
         <h3 className="font-semibold text-[var(--foreground-strong)]">{tStudents("assignNewHomework")}</h3>
       </div>
 
-      <div className="space-y-2">
+      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
         {topics.map((topic) => {
           const expanded = expandedTopicId === topic.id;
           const selected =
@@ -169,12 +169,16 @@ export function AssignHomeworkPanel({
           return (
             <div
               key={topic.id}
-              className="overflow-hidden rounded-2xl border border-[var(--card-border)] bg-[var(--background)]"
+              className={`overflow-hidden rounded-[2rem] border bg-white shadow-[var(--shadow-card)] ${
+                expanded
+                  ? "border-[var(--accent)] sm:col-span-2 xl:col-span-3"
+                  : "border-[var(--card-border)]"
+              }`}
             >
               <button
                 type="button"
                 onClick={() => toggleTopic(topic.id)}
-                className="flex w-full items-center gap-3 px-4 py-4 text-left hover:bg-white/60"
+                className="flex w-full items-center gap-3 p-4 text-left hover:bg-[var(--background)]/60"
               >
                 <span
                   className={`shrink-0 text-[var(--muted)] transition-transform ${expanded ? "rotate-90" : ""}`}
@@ -183,7 +187,7 @@ export function AssignHomeworkPanel({
                   ▶
                 </span>
                 <span className="min-w-0 flex-1">
-                  <span className="block font-semibold text-[var(--foreground-strong)]">
+                  <span className="block font-display text-lg text-[var(--foreground-strong)]">
                     {topic.title}
                   </span>
                   <span className="mt-0.5 block text-xs text-[var(--muted)]">
@@ -199,7 +203,7 @@ export function AssignHomeworkPanel({
               </button>
 
               {expanded ? (
-                <div className="border-t border-[var(--card-border)] bg-white px-4 py-4">
+                <div className="border-t border-[var(--card-border)] bg-[var(--background)] px-4 py-4">
                   <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
                     <button
                       type="button"
@@ -217,7 +221,7 @@ export function AssignHomeworkPanel({
                     </button>
                   </div>
 
-                  <ul className="grid gap-2 sm:grid-cols-2">
+                  <ul className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
                     {topic.tasks.map((task) => {
                       const assignedTask = assignment?.tasks.find(
                         (item) => item.roomTaskId === task.id,

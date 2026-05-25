@@ -32,8 +32,9 @@ export function StudentProgressPanel({
       open={open}
       title={t("studentProgress")}
       onClose={onClose}
-      maxWidthClass="max-w-2xl"
-      maxHeightClass="max-h-[92dvh]"
+      maxWidthClass="max-w-full sm:max-w-4xl"
+      maxHeightClass="max-h-[96dvh] min-h-[90dvh] sm:min-h-0 sm:max-h-[92dvh]"
+      sheetOnMobile
     >
       <StudentCardView
         locale={locale}

@@ -280,6 +280,7 @@
       "loadingHistory": "Загрузка истории…",
       "noHistory": "История ответов пока пуста.",
       "historyTitle": "История ответов (последние 1000)",
+      "historyTitleShort": "История ответов",
       "colDate": "Дата",
       "colTopic": "Тема",
       "colTask": "Задание",

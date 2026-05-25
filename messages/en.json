@@ -280,6 +280,7 @@
       "loadingHistory": "Loading history…",
       "noHistory": "No answer history yet.",
       "historyTitle": "Answer history (last 1000)",
+      "historyTitleShort": "Answer history",
       "colDate": "Date",
       "colTopic": "Topic",
       "colTask": "Task",

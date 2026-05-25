@@ -69,6 +69,32 @@ function formatDuration(seconds: number | null) {
   return `${String(mins).padStart(2, "0")}:${String(secs).padStart(2, "0")}`;
 }
 
+function formatHistoryDate(iso: string, compact = false) {
+  const date = new Date(iso);
+  if (compact) {
+    const day = String(date.getDate()).padStart(2, "0");
+    const month = String(date.getMonth() + 1).padStart(2, "0");
+    const hours = String(date.getHours()).padStart(2, "0");
+    const minutes = String(date.getMinutes()).padStart(2, "0");
+    return `${day}.${month} ${hours}:${minutes}`;
+  }
+
+  return date.toLocaleString("ru-RU", {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+}
+
+function shortTopicTitle(title: string, maxLen = 22) {
+  if (title.length <= maxLen) {
+    return title;
+  }
+  return `${title.slice(0, maxLen - 1)}…`;
+}
+
 function answerTypeLabel(type: string) {
   switch (type) {
     case "IMAGE":
@@ -338,15 +364,15 @@ export function StudentCardView({
         </div>
       ) : null}
 
-      <div className="overflow-hidden rounded-[1.5rem] border border-[var(--card-border)] bg-white shadow-[var(--shadow-card)]">
-        <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[var(--card-border)] px-4 pt-3 sm:px-6">
-          <div className="flex gap-1 overflow-x-auto scrollbar-hide">
+      <div className={`overflow-hidden rounded-[1.5rem] border border-[var(--card-border)] bg-white shadow-[var(--shadow-card)] ${compact ? "rounded-[1.25rem]" : ""}`}>
+        <div className={`flex flex-wrap items-center justify-between gap-3 border-b border-[var(--card-border)] ${compact ? "px-3 pt-2 sm:px-6 sm:pt-3" : "px-4 pt-3 sm:px-6"}`}>
+          <div className="flex gap-0.5 overflow-x-auto scrollbar-hide sm:gap-1">
             {tabs.map((tab) => (
               <button
                 key={tab.id}
                 type="button"
                 onClick={() => setActiveTab(tab.id)}
-                className={`shrink-0 border-b-2 px-4 py-3 text-sm font-semibold transition-colors ${
+                className={`shrink-0 border-b-2 px-3 py-2.5 text-xs font-semibold transition-colors sm:px-4 sm:py-3 sm:text-sm ${
                   activeTab === tab.id
                     ? "border-[var(--accent)] text-[var(--accent)]"
                     : "border-transparent text-[var(--muted)] hover:text-[var(--foreground-strong)]"
@@ -358,7 +384,7 @@ export function StudentCardView({
           </div>
         </div>
 
-        <div className="p-4 sm:p-6">
+        <div className={compact ? "p-3 sm:p-6" : "p-4 sm:p-6"}>
           {activeTab === "homework" ? (
             <HomeworkTab
               locale={locale}
@@ -393,6 +419,7 @@ export function StudentCardView({
               history={history}
               pending={pending}
               loaded={historyLoaded}
+              compact={compact}
               onSelectItem={(item) => openTaskPreview(item.roomTaskId, item)}
               t={t}
               tStudents={tStudents}
@@ -602,164 +629,175 @@ function HomeworkTab({
           <h3 className="text-sm font-semibold text-[var(--foreground-strong)]">
             {tStudents("currentAssignments")}
           </h3>
-          {assignments.map((assignment) => (
-        <div
-          key={assignment.id}
-          className="overflow-hidden rounded-2xl border border-[var(--card-border)] bg-[var(--background)]"
-        >
-          <div className="flex flex-wrap items-start justify-between gap-3 border-b border-[var(--card-border)] bg-white px-4 py-4">
-            <div className="min-w-0">
-              <p className="font-semibold text-[var(--foreground-strong)]">{assignment.topicTitle}</p>
-              <p className="mt-1 text-xs text-[var(--muted)]">
-                {t("progress", {
-                  done: assignment.completedTasks,
-                  total: assignment.totalTasks,
-                })}
-                {assignment.errorTasks > 0
-                  ? ` · ${assignment.errorTasks} ${t("statsErrors").toLowerCase()}`
-                  : null}
-              </p>
-              <p className="mt-1 text-xs text-[var(--muted)]">
-                {tStudents("assignedAt")}:{" "}
-                {new Date(assignment.assignedAt).toLocaleDateString("ru-RU", {
-                  day: "numeric",
-                  month: "short",
-                  year: "numeric",
-                })}
-              </p>
-            </div>
-            <ProgressBar done={assignment.completedTasks} total={assignment.totalTasks} />
-            {revokeTargetId === assignment.id ? (
-              <div className="flex shrink-0 flex-col items-end gap-1">
-                <p className="text-xs text-[var(--muted)]">{t("revokeConfirm")}</p>
-                <div className="flex gap-2">
-                  <button
-                    type="button"
-                    onClick={() => onRevokeTarget(null)}
-                    disabled={pending}
-                    className="text-xs font-semibold text-[var(--muted)] hover:underline"
-                  >
-                    {t("cancel")}
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => onRevoke(assignment.id)}
-                    disabled={pending}
-                    className="text-xs font-semibold text-red-600 hover:underline"
-                  >
-                    {t("confirm")}
-                  </button>
-                </div>
-              </div>
-            ) : (
-              <button
-                type="button"
-                onClick={() => onRevokeTarget(assignment.id)}
-                disabled={pending}
-                className="shrink-0 rounded-full border border-red-200 bg-red-50 px-3 py-1.5 text-xs font-semibold text-red-600 hover:bg-red-100"
+          <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+            {assignments.map((assignment) => (
+              <article
+                key={assignment.id}
+                className="flex flex-col overflow-hidden rounded-[2rem] border border-[var(--card-border)] bg-white shadow-[var(--shadow-card)]"
               >
-                {t("revoke")}
-              </button>
-            )}
-          </div>
-
-          <ul className="divide-y divide-[var(--card-border)]">
-            {assignment.tasks.map((task) => (
-              <li key={task.roomTaskId} className="bg-white">
-                <div className="flex items-center gap-2 px-4 py-3">
-                  <button
-                    type="button"
-                    onClick={() => onOpenTaskPreview(task.roomTaskId)}
-                    className="min-w-0 flex-1 text-left hover:opacity-80"
-                  >
-                    <span className="block text-sm font-medium text-[var(--foreground-strong)]">
-                      {task.title}
-                    </span>
-                    <span className="mt-1 inline-block rounded-full bg-[var(--accent-soft)] px-2 py-0.5 text-[10px] font-semibold uppercase text-[var(--accent)]">
-                      {answerTypeLabel(task.answerType)}
-                    </span>
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => onLoadAttempts(task.roomTaskId)}
-                    className="shrink-0"
-                  >
-                    <TaskStatusBadge
-                      status={task.progress?.status ?? "IN_PROGRESS"}
-                      errorCount={task.progress?.errorCount ?? 0}
-                      t={t}
-                      expanded={expandedTaskId === task.roomTaskId}
-                    />
-                  </button>
-                </div>
-
-                {expandedTaskId === task.roomTaskId ? (
-                  <div className="border-t border-[var(--card-border)] bg-[var(--background)] px-4 py-4">
-                    {taskContext?.correctAnswer ? (
-                      <p className="mb-3 text-xs text-[var(--muted)]">
-                        {tStudents("correctAnswer")}:{" "}
-                        <span className="font-semibold text-[var(--foreground-strong)]">
-                          {taskContext.correctAnswer}
-                        </span>
+                <div className="border-b border-[var(--card-border)] p-4">
+                  <div className="flex flex-wrap items-start justify-between gap-3">
+                    <div className="min-w-0 flex-1">
+                      <p className="font-display text-lg text-[var(--foreground-strong)]">
+                        {assignment.topicTitle}
                       </p>
-                    ) : null}
-                    {attempts.length === 0 ? (
-                      <p className="text-xs text-[var(--muted)]">{t("noAttempts")}</p>
-                    ) : (
-                      <ul className="space-y-2">
-                        {attempts.map((attempt, index) => (
-                          <li
-                            key={attempt.id}
-                            className="rounded-xl border border-[var(--card-border)] bg-white p-3 text-xs"
+                      <p className="mt-1 text-xs text-[var(--muted)]">
+                        {t("progress", {
+                          done: assignment.completedTasks,
+                          total: assignment.totalTasks,
+                        })}
+                        {assignment.errorTasks > 0
+                          ? ` · ${assignment.errorTasks} ${t("statsErrors").toLowerCase()}`
+                          : null}
+                      </p>
+                      <p className="mt-1 text-xs text-[var(--muted)]">
+                        {tStudents("assignedAt")}:{" "}
+                        {new Date(assignment.assignedAt).toLocaleDateString("ru-RU", {
+                          day: "numeric",
+                          month: "short",
+                          year: "numeric",
+                        })}
+                      </p>
+                    </div>
+                    <ProgressBar done={assignment.completedTasks} total={assignment.totalTasks} />
+                  </div>
+                  <div className="mt-3">
+                    {revokeTargetId === assignment.id ? (
+                      <div className="flex flex-wrap items-center justify-between gap-2 rounded-xl bg-red-50 px-3 py-2">
+                        <p className="text-xs text-[var(--muted)]">{t("revokeConfirm")}</p>
+                        <div className="flex gap-2">
+                          <button
+                            type="button"
+                            onClick={() => onRevokeTarget(null)}
+                            disabled={pending}
+                            className="text-xs font-semibold text-[var(--muted)] hover:underline"
                           >
-                            <div className="flex flex-wrap items-center justify-between gap-2">
-                              <p className="font-semibold text-[var(--foreground-strong)]">
-                                {tStudents("attemptNumber", { n: index + 1 })}
-                              </p>
-                              <ResultBadge
-                                result={
-                                  attempt.isCorrect === true
-                                    ? "CORRECT"
-                                    : attempt.isCorrect === false
-                                      ? "INCORRECT"
-                                      : "SUBMITTED"
-                                }
-                                t={t}
-                              />
-                            </div>
-                            <p className="mt-1 text-[var(--muted)]">
-                              {new Date(attempt.createdAt).toLocaleString("ru-RU")}
-                              {attempt.usedHint ? ` · ${t("hintUsed")}` : ""}
-                            </p>
-                            {attempt.answerText ? (
-                              <p className="mt-2 rounded-lg bg-[var(--background)] p-2 text-[var(--foreground-strong)]">
-                                {attempt.answerText}
-                              </p>
-                            ) : null}
-                            {attempt.optionLabels.length > 0 ? (
-                              <p className="mt-2 rounded-lg bg-[var(--background)] p-2 text-[var(--foreground-strong)]">
-                                {attempt.optionLabels.join(", ")}
-                              </p>
-                            ) : null}
-                            {attempt.imageUrl ? (
-                              // eslint-disable-next-line @next/next/no-img-element
-                              <img
-                                src={attempt.imageUrl}
-                                alt=""
-                                className="mt-2 max-h-48 w-full rounded-lg object-contain"
-                              />
-                            ) : null}
-                          </li>
-                        ))}
-                      </ul>
+                            {t("cancel")}
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => onRevoke(assignment.id)}
+                            disabled={pending}
+                            className="text-xs font-semibold text-red-600 hover:underline"
+                          >
+                            {t("confirm")}
+                          </button>
+                        </div>
+                      </div>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={() => onRevokeTarget(assignment.id)}
+                        disabled={pending}
+                        className="rounded-full border border-red-200 bg-red-50 px-3 py-1.5 text-xs font-semibold text-red-600 hover:bg-red-100"
+                      >
+                        {t("revoke")}
+                      </button>
                     )}
                   </div>
-                ) : null}
-              </li>
+                </div>
+
+                <ul className="grid flex-1 gap-2 p-4">
+                  {assignment.tasks.map((task) => (
+                    <li
+                      key={task.roomTaskId}
+                      className="overflow-hidden rounded-xl border border-[var(--card-border)] bg-[var(--background)]"
+                    >
+                      <div className="flex items-start gap-2 p-3">
+                        <button
+                          type="button"
+                          onClick={() => onOpenTaskPreview(task.roomTaskId)}
+                          className="min-w-0 flex-1 text-left hover:opacity-80"
+                        >
+                          <span className="block text-sm font-medium text-[var(--foreground-strong)]">
+                            {task.title}
+                          </span>
+                          <span className="mt-1 inline-block rounded-full bg-[var(--accent-soft)] px-2 py-0.5 text-[10px] font-semibold uppercase text-[var(--accent)]">
+                            {answerTypeLabel(task.answerType)}
+                          </span>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => onLoadAttempts(task.roomTaskId)}
+                          className="shrink-0"
+                        >
+                          <TaskStatusBadge
+                            status={task.progress?.status ?? "IN_PROGRESS"}
+                            errorCount={task.progress?.errorCount ?? 0}
+                            t={t}
+                            expanded={expandedTaskId === task.roomTaskId}
+                          />
+                        </button>
+                      </div>
+
+                      {expandedTaskId === task.roomTaskId ? (
+                        <div className="border-t border-[var(--card-border)] bg-white px-3 py-3">
+                          {taskContext?.correctAnswer ? (
+                            <p className="mb-3 text-xs text-[var(--muted)]">
+                              {tStudents("correctAnswer")}:{" "}
+                              <span className="font-semibold text-[var(--foreground-strong)]">
+                                {taskContext.correctAnswer}
+                              </span>
+                            </p>
+                          ) : null}
+                          {attempts.length === 0 ? (
+                            <p className="text-xs text-[var(--muted)]">{t("noAttempts")}</p>
+                          ) : (
+                            <ul className="space-y-2">
+                              {attempts.map((attempt, index) => (
+                                <li
+                                  key={attempt.id}
+                                  className="rounded-xl border border-[var(--card-border)] bg-[var(--background)] p-3 text-xs"
+                                >
+                                  <div className="flex flex-wrap items-center justify-between gap-2">
+                                    <p className="font-semibold text-[var(--foreground-strong)]">
+                                      {tStudents("attemptNumber", { n: index + 1 })}
+                                    </p>
+                                    <ResultBadge
+                                      result={
+                                        attempt.isCorrect === true
+                                          ? "CORRECT"
+                                          : attempt.isCorrect === false
+                                            ? "INCORRECT"
+                                            : "SUBMITTED"
+                                      }
+                                      t={t}
+                                    />
+                                  </div>
+                                  <p className="mt-1 text-[var(--muted)]">
+                                    {new Date(attempt.createdAt).toLocaleString("ru-RU")}
+                                    {attempt.usedHint ? ` · ${t("hintUsed")}` : ""}
+                                  </p>
+                                  {attempt.answerText ? (
+                                    <p className="mt-2 rounded-lg bg-white p-2 text-[var(--foreground-strong)]">
+                                      {attempt.answerText}
+                                    </p>
+                                  ) : null}
+                                  {attempt.optionLabels.length > 0 ? (
+                                    <p className="mt-2 rounded-lg bg-white p-2 text-[var(--foreground-strong)]">
+                                      {attempt.optionLabels.join(", ")}
+                                    </p>
+                                  ) : null}
+                                  {attempt.imageUrl ? (
+                                    // eslint-disable-next-line @next/next/no-img-element
+                                    <img
+                                      src={attempt.imageUrl}
+                                      alt=""
+                                      className="mt-2 max-h-48 w-full rounded-lg object-contain"
+                                    />
+                                  ) : null}
+                                </li>
+                              ))}
+                            </ul>
+                          )}
+                        </div>
+                      ) : null}
+                    </li>
+                  ))}
+                </ul>
+              </article>
             ))}
-          </ul>
-        </div>
-          ))}
+          </div>
         </div>
       )}
     </div>
@@ -784,7 +822,7 @@ function TopicsTab({
   }
 
   return (
-    <div className="grid gap-4 sm:grid-cols-2">
+    <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
       {roomTopics.map((topic) => {
         const percent =
           topic.totalTasks > 0
@@ -793,24 +831,29 @@ function TopicsTab({
         const hasProgress = topic.startedTasks > 0;
 
         return (
-          <div
+          <article
             key={topic.roomTopicId}
-            className="rounded-2xl border border-[var(--card-border)] bg-[var(--background)] p-4"
+            className="flex flex-col rounded-[2rem] border border-[var(--card-border)] bg-white p-4 shadow-[var(--shadow-card)]"
           >
-            <div className="flex flex-wrap items-start justify-between gap-2">
-              <p className="font-semibold text-[var(--foreground-strong)]">{topic.title}</p>
-              <div className="flex flex-wrap gap-1.5">
-                {topic.isAssigned ? (
-                  <span className="rounded-full bg-[var(--accent-soft)] px-2.5 py-1 text-[10px] font-semibold uppercase text-[var(--accent)]">
-                    {tStudents("homeworkBadge")}
-                  </span>
-                ) : null}
-                {!hasProgress ? (
-                  <span className="rounded-full bg-gray-100 px-2.5 py-1 text-[10px] font-semibold text-gray-600">
-                    {tStudents("topicNotStarted")}
-                  </span>
-                ) : null}
+            <div className="aspect-[16/10] overflow-hidden rounded-2xl bg-gradient-to-br from-[var(--accent-soft)] via-white to-[var(--background)]">
+              <div className="flex h-full flex-col justify-end p-3">
+                <div className="flex flex-wrap gap-1.5">
+                  {topic.isAssigned ? (
+                    <span className="rounded-full bg-white/90 px-2.5 py-1 text-[10px] font-semibold uppercase text-[var(--accent)] shadow-sm">
+                      {tStudents("homeworkBadge")}
+                    </span>
+                  ) : null}
+                  {!hasProgress ? (
+                    <span className="rounded-full bg-white/90 px-2.5 py-1 text-[10px] font-semibold text-gray-600 shadow-sm">
+                      {tStudents("topicNotStarted")}
+                    </span>
+                  ) : null}
+                </div>
               </div>
+            </div>
+
+            <div className="mt-4 flex flex-wrap items-start justify-between gap-2">
+              <p className="font-display text-lg text-[var(--foreground-strong)]">{topic.title}</p>
             </div>
 
             <p className="mt-1 text-xs text-[var(--muted)]">
@@ -864,7 +907,7 @@ function TopicsTab({
                 ) : null}
               </div>
             ) : null}
-          </div>
+          </article>
         );
       })}
     </div>
@@ -875,6 +918,7 @@ function HistoryTab({
   history,
   pending,
   loaded,
+  compact = false,
   onSelectItem,
   t,
   tStudents,
@@ -882,6 +926,7 @@ function HistoryTab({
   history: StudentAnswerHistoryItem[];
   pending: boolean;
   loaded: boolean;
+  compact?: boolean;
   onSelectItem: (item: StudentAnswerHistoryItem) => void;
   t: ReturnType<typeof useTranslations>;
   tStudents: ReturnType<typeof useTranslations>;
@@ -900,22 +945,61 @@ function HistoryTab({
 
   return (
     <div>
-      <p className="mb-4 flex items-center gap-2 text-sm font-semibold text-[var(--foreground-strong)]">
+      <p className="mb-3 flex items-center gap-2 text-xs font-semibold text-[var(--foreground-strong)] sm:mb-4 sm:text-sm">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden>
           <circle cx="12" cy="12" r="9" stroke="currentColor" strokeWidth="1.8" />
           <path d="M12 7v5l3 2" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
         </svg>
-        {tStudents("historyTitle")}
+        <span className="sm:hidden">{tStudents("historyTitleShort")}</span>
+        <span className="hidden sm:inline">{tStudents("historyTitle")}</span>
       </p>
-      <div className="overflow-x-auto rounded-2xl border border-[var(--card-border)]">
+
+      <ul className={`space-y-2 ${compact ? "sm:hidden" : "md:hidden"}`}>
+        {history.map((item) => (
+          <li key={item.id}>
+            <button
+              type="button"
+              onClick={() => onSelectItem(item)}
+              className="w-full rounded-xl border border-[var(--card-border)] bg-[var(--background)] p-3 text-left transition-colors hover:border-[var(--accent)]/40 hover:bg-[var(--accent-soft)]/30"
+            >
+              <div className="flex items-start justify-between gap-2">
+                <time
+                  dateTime={item.createdAt}
+                  className="shrink-0 text-[10px] font-medium tabular-nums text-[var(--muted)]"
+                >
+                  {formatHistoryDate(item.createdAt, true)}
+                </time>
+                <ResultBadge result={item.result} t={t} short />
+              </div>
+              <p className="mt-1.5 truncate text-sm font-semibold text-[var(--foreground-strong)]">
+                {item.taskTitle}
+              </p>
+              <p className="mt-0.5 truncate text-[11px] text-[var(--muted)]">
+                {shortTopicTitle(item.topicTitle)}
+              </p>
+              <p className="mt-1.5 truncate text-xs text-[var(--foreground-strong)]">
+                {item.imageUrl ? (
+                  <span className="text-[var(--accent)]">
+                    📷 {item.answerDisplay !== "📷" ? item.answerDisplay : tStudents("photoAnswer")}
+                  </span>
+                ) : (
+                  item.answerDisplay
+                )}
+              </p>
+            </button>
+          </li>
+        ))}
+      </ul>
+
+      <div className={`overflow-x-auto rounded-2xl border border-[var(--card-border)] ${compact ? "hidden sm:block" : "hidden md:block"}`}>
         <table className="min-w-full text-left text-sm">
           <thead className="bg-[var(--background)] text-xs font-semibold uppercase tracking-wide text-[var(--muted)]">
             <tr>
-              <th className="px-4 py-3">{tStudents("colDate")}</th>
-              <th className="px-4 py-3">{tStudents("colTopic")}</th>
-              <th className="px-4 py-3">{tStudents("colTask")}</th>
-              <th className="px-4 py-3">{tStudents("colAnswer")}</th>
-              <th className="px-4 py-3">{tStudents("colResult")}</th>
+              <th className="px-3 py-2.5 sm:px-4 sm:py-3">{tStudents("colDate")}</th>
+              <th className="px-3 py-2.5 sm:px-4 sm:py-3">{tStudents("colTopic")}</th>
+              <th className="px-3 py-2.5 sm:px-4 sm:py-3">{tStudents("colTask")}</th>
+              <th className="px-3 py-2.5 sm:px-4 sm:py-3">{tStudents("colAnswer")}</th>
+              <th className="px-3 py-2.5 sm:px-4 sm:py-3">{tStudents("colResult")}</th>
               <th className="hidden px-4 py-3 sm:table-cell">{tStudents("colAttempt")}</th>
               <th className="hidden px-4 py-3 md:table-cell">{tStudents("colHints")}</th>
               <th className="hidden px-4 py-3 lg:table-cell">{tStudents("colTime")}</th>
@@ -928,22 +1012,16 @@ function HistoryTab({
                 className="cursor-pointer hover:bg-[var(--accent-soft)]/40"
                 onClick={() => onSelectItem(item)}
               >
-                <td className="whitespace-nowrap px-4 py-3 text-xs text-[var(--muted)]">
-                  {new Date(item.createdAt).toLocaleString("ru-RU", {
-                    day: "2-digit",
-                    month: "2-digit",
-                    year: "numeric",
-                    hour: "2-digit",
-                    minute: "2-digit",
-                  })}
+                <td className="whitespace-nowrap px-3 py-2.5 text-xs tabular-nums text-[var(--muted)] sm:px-4 sm:py-3">
+                  {formatHistoryDate(item.createdAt, compact)}
                 </td>
-                <td className="max-w-[8rem] truncate px-4 py-3 text-[var(--foreground-strong)]">
+                <td className="max-w-[8rem] truncate px-3 py-2.5 text-[var(--foreground-strong)] sm:px-4 sm:py-3">
                   {item.topicTitle}
                 </td>
-                <td className="max-w-[8rem] truncate px-4 py-3 text-[var(--foreground-strong)]">
+                <td className="max-w-[8rem] truncate px-3 py-2.5 text-[var(--foreground-strong)] sm:px-4 sm:py-3">
                   {item.taskTitle}
                 </td>
-                <td className="max-w-[10rem] truncate px-4 py-3">
+                <td className="max-w-[10rem] truncate px-3 py-2.5 sm:px-4 sm:py-3">
                   {item.imageUrl ? (
                     <span className="inline-flex items-center gap-1 text-[var(--accent)]">
                       📷 {item.answerDisplay !== "📷" ? item.answerDisplay : tStudents("photoAnswer")}
@@ -952,8 +1030,8 @@ function HistoryTab({
                     item.answerDisplay
                   )}
                 </td>
-                <td className="px-4 py-3">
-                  <ResultBadge result={item.result} t={t} />
+                <td className="px-3 py-2.5 sm:px-4 sm:py-3">
+                  <ResultBadge result={item.result} t={t} short={compact} />
                 </td>
                 <td className="hidden px-4 py-3 sm:table-cell">{item.attemptNumber}</td>
                 <td className="hidden px-4 py-3 md:table-cell">
@@ -1023,11 +1101,21 @@ function TaskStatusBadge({
 function ResultBadge({
   result,
   t,
+  short = false,
 }: {
   result: "CORRECT" | "INCORRECT" | "SUBMITTED" | "SKIPPED";
   t: ReturnType<typeof useTranslations>;
+  short?: boolean;
 }) {
-  const label = historyResultLabel(result, t);
+  const label = short
+    ? result === "CORRECT"
+      ? "✓"
+      : result === "INCORRECT"
+        ? "✗"
+        : result === "SKIPPED"
+          ? "—"
+          : "…"
+    : historyResultLabel(result, t);
   const tone =
     result === "CORRECT"
       ? "bg-emerald-100 text-emerald-800"
@@ -1038,7 +1126,12 @@ function ResultBadge({
           : "bg-blue-100 text-blue-800";
 
   return (
-    <span className={`inline-block rounded-full px-2.5 py-1 text-xs font-semibold ${tone}`}>
+    <span
+      className={`inline-block shrink-0 rounded-full font-semibold ${tone} ${
+        short ? "px-2 py-0.5 text-[10px]" : "px-2.5 py-1 text-xs"
+      }`}
+      title={short ? historyResultLabel(result, t) : undefined}
+    >
       {label}
     </span>
   );

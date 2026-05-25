@@ -13,6 +13,7 @@ type RoomDialogProps = {
   maxWidthClass?: string;
   maxHeightClass?: string;
   zIndexClass?: string;
+  sheetOnMobile?: boolean;
   children: React.ReactNode;
 };
 
@@ -25,6 +26,7 @@ export function RoomDialog({
   maxWidthClass = "max-w-md",
   maxHeightClass = "max-h-[90dvh]",
   zIndexClass = "z-50",
+  sheetOnMobile = false,
   children,
 }: RoomDialogProps) {
   useEffect(() => {
@@ -50,7 +52,7 @@ export function RoomDialog({
 
   return createPortal(
     <div
-      className={`fixed inset-0 ${zIndexClass} flex items-end justify-center p-3 sm:items-center sm:p-6`}
+      className={`fixed inset-0 ${zIndexClass} flex items-end justify-center sm:items-center ${sheetOnMobile ? "p-0 sm:p-6" : "p-3 sm:p-6"}`}
     >
       <button
         type="button"
@@ -62,10 +64,14 @@ export function RoomDialog({
         role="dialog"
         aria-modal="true"
         aria-labelledby="room-dialog-title"
-        className={`relative z-10 flex w-full flex-col ${maxWidthClass} ${maxHeightClass} rounded-[2rem] border border-[var(--card-border)] bg-white p-5 shadow-[0_16px_48px_rgba(42,62,71,0.14)] sm:p-6`}
+        className={`relative z-10 flex w-full flex-col ${maxWidthClass} ${maxHeightClass} border border-[var(--card-border)] bg-white shadow-[0_16px_48px_rgba(42,62,71,0.14)] ${
+          sheetOnMobile
+            ? "rounded-t-[2rem] rounded-b-none p-4 sm:rounded-[2rem] sm:p-6"
+            : "rounded-[2rem] p-5 sm:p-6"
+        }`}
         onClick={(event) => event.stopPropagation()}
       >
-        <div className="mb-5 flex shrink-0 items-start justify-between gap-3">
+        <div className="mb-4 flex shrink-0 items-start justify-between gap-3 sm:mb-5">
           <div className="flex min-w-0 items-start gap-2">
             {onBack ? (
               <button
@@ -79,7 +85,7 @@ export function RoomDialog({
             ) : null}
             <h2
               id="room-dialog-title"
-              className="font-display text-2xl text-[var(--foreground-strong)]"
+              className="font-display text-xl text-[var(--foreground-strong)] sm:text-2xl"
             >
               {title}
             </h2>

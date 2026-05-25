@@ -53,45 +53,57 @@ export function RoomTopicsList({ locale, roomId, topics, isTutor }: RoomTopicsLi
             : "Учитель ещё не добавил темы в эту комнату."}
         </p>
       ) : (
-        <ul className="mt-4 space-y-3">
+        <div className="mt-4 grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
           {topics.map((topic) => (
-            <li
+            <article
               key={topic.id}
-              className="rounded-[1.25rem] border border-[var(--card-border)] bg-[var(--background)] p-4"
+              className="flex min-h-[220px] flex-col rounded-[2rem] border border-[var(--card-border)] bg-white p-5 shadow-[var(--shadow-card)]"
             >
-              <div className="flex items-start justify-between gap-3">
-                <div className="min-w-0">
-                  <p className="text-sm font-semibold text-[var(--foreground-strong)]">
-                    {topic.title}
-                  </p>
-                  {topic.description ? (
-                    <p className="mt-1 text-xs text-[var(--muted)]">{topic.description}</p>
-                  ) : null}
-                  <p className="mt-2 text-xs text-[var(--muted)]">
+              <div className="aspect-[16/10] overflow-hidden rounded-2xl bg-gradient-to-br from-[var(--accent-soft)] via-white to-[var(--background)]">
+                <div className="flex h-full flex-col justify-end p-4">
+                  <span className="w-fit rounded-full bg-white/90 px-2.5 py-1 text-xs font-semibold text-[var(--accent)] shadow-sm">
                     {topic._count.tasks}{" "}
                     {topic._count.tasks === 1
                       ? "задание"
                       : topic._count.tasks < 5
                         ? "задания"
                         : "заданий"}
-                  </p>
-                  <div className="mt-2">
-                    <TagBadges tags={topic.tags} />
-                  </div>
+                  </span>
                 </div>
-                {isTutor ? (
+              </div>
+
+              <div className="mt-4 min-w-0 flex-1">
+                <h3 className="font-display text-lg text-[var(--foreground-strong)]">
+                  {topic.title}
+                </h3>
+                {topic.description ? (
+                  <p className="mt-2 line-clamp-2 text-sm text-[var(--muted)]">
+                    {topic.description}
+                  </p>
+                ) : (
+                  <p className="mt-2 text-sm text-[var(--muted)]">Без описания</p>
+                )}
+                {topic.tags.length > 0 ? (
+                  <div className="mt-3">
+                    <TagBadges tags={topic.tags.slice(0, 4)} />
+                  </div>
+                ) : null}
+              </div>
+
+              {isTutor ? (
+                <div className="mt-4">
                   <button
                     type="button"
                     onClick={() => void handleRemove(topic.id, topic.title)}
-                    className="touch-target rounded-full px-3 py-1 text-xs font-semibold text-red-600 hover:bg-red-50"
+                    className="touch-target rounded-full border-2 border-red-200 px-4 py-2 text-sm font-semibold text-red-600 hover:bg-red-50"
                   >
                     Удалить
                   </button>
-                ) : null}
-              </div>
-            </li>
+                </div>
+              ) : null}
+            </article>
           ))}
-        </ul>
+        </div>
       )}
     </div>
   );
