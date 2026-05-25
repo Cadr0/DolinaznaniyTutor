@@ -12,6 +12,7 @@ import { TaskComposerActions } from "@/components/homework/TaskComposerActions";
 import { TaskProgressDots } from "@/components/homework/TaskProgressDots";
 import { TaskImageDropzone } from "@/components/tasks/TaskImageDropzone";
 import type { StudentTopicAssignmentSummary } from "@/lib/student-assignments";
+import { isTaskCompleted } from "@/lib/task-progress";
 import type { StudentRoomTask } from "@/lib/room-tasks";
 import { parseUploadResponse, uploadErrorMessage } from "@/lib/upload-client";
 
@@ -44,6 +45,24 @@ export function TaskPlayer({ locale, assignment, initialTaskId, task }: TaskPlay
     const index = assignment.tasks.findIndex((item) => item.roomTaskId === taskId);
     return index >= 0 ? index + 1 : 1;
   }, [assignment.tasks, taskId]);
+
+  const currentAssignmentTask = useMemo(
+    () => assignment.tasks.find((item) => item.roomTaskId === taskId) ?? null,
+    [assignment.tasks, taskId],
+  );
+
+  const isTaskDone = Boolean(
+    currentAssignmentTask?.progress &&
+      isTaskCompleted(currentAssignmentTask.progress.status),
+  );
+
+  const nextIncompleteTask = useMemo(
+    () =>
+      assignment.tasks.find(
+        (item) => !item.progress || !isTaskCompleted(item.progress.status),
+      ) ?? null,
+    [assignment.tasks],
+  );
 
   const progressPercent =
     assignment.totalTasks > 0
@@ -123,6 +142,10 @@ export function TaskPlayer({ locale, assignment, initialTaskId, task }: TaskPlay
   }
 
   function handleSubmit() {
+    if (isTaskDone) {
+      return;
+    }
+
     startTransition(async () => {
       setError("");
       setFeedback(null);
@@ -157,6 +180,10 @@ export function TaskPlayer({ locale, assignment, initialTaskId, task }: TaskPlay
   }
 
   function handleSkip() {
+    if (isTaskDone) {
+      return;
+    }
+
     startTransition(async () => {
       setError("");
       try {
@@ -177,7 +204,7 @@ export function TaskPlayer({ locale, assignment, initialTaskId, task }: TaskPlay
     }
   }
 
-  const composerActions = (
+  const composerActions = isTaskDone ? null : (
     <TaskComposerActions
       submitLabel={t("check")}
       skipLabel={t("skip")}
@@ -187,6 +214,13 @@ export function TaskPlayer({ locale, assignment, initialTaskId, task }: TaskPlay
       onSkip={handleSkip}
     />
   );
+
+  const completedStatusLabel =
+    currentAssignmentTask?.progress?.status === "SKIPPED"
+      ? t("statusSkipped")
+      : currentAssignmentTask?.progress?.status === "SUBMITTED"
+        ? t("statusSubmitted")
+        : t("statusCorrect");
 
   const isTextTask = currentTask.answerType === "TEXT";
 
@@ -219,10 +253,10 @@ export function TaskPlayer({ locale, assignment, initialTaskId, task }: TaskPlay
           task={currentTask}
           hintRevealed={hintRevealed}
           hintPending={pending}
-          onHintRequest={hintRevealed ? undefined : handleHint}
+          onHintRequest={isTaskDone || hintRevealed ? undefined : handleHint}
           composer={isTextTask ? undefined : composerActions}
         >
-          {isTextTask ? (
+          {isTextTask && !isTaskDone ? (
             <div className="mt-2 flex items-center gap-2">
               <textarea
                 value={answerText}
@@ -244,7 +278,7 @@ export function TaskPlayer({ locale, assignment, initialTaskId, task }: TaskPlay
             </div>
           ) : null}
 
-          {currentTask.answerType === "CHOICE" ? (
+          {!isTaskDone && currentTask.answerType === "CHOICE" ? (
             <ul className="mt-2 space-y-2">
               {currentTask.choiceOptions.map((option) => {
                 const selected = selectedIds.includes(option.id);
@@ -267,7 +301,7 @@ export function TaskPlayer({ locale, assignment, initialTaskId, task }: TaskPlay
             </ul>
           ) : null}
 
-          {currentTask.answerType === "IMAGE" ? (
+          {!isTaskDone && currentTask.answerType === "IMAGE" ? (
             <div className="mt-2">
               <TaskImageDropzone
                 imageUrl={imageUrl}
@@ -286,6 +320,31 @@ export function TaskPlayer({ locale, assignment, initialTaskId, task }: TaskPlay
             </div>
           ) : null}
         </StudentTaskView>
+
+        {isTaskDone ? (
+          <div className="mt-4 space-y-3">
+            <p className="rounded-2xl bg-emerald-50 px-4 py-3 text-sm font-semibold text-emerald-800">
+              {t("taskAlreadyCompleted")} — {completedStatusLabel}
+            </p>
+            {nextIncompleteTask && nextIncompleteTask.roomTaskId !== taskId ? (
+              <button
+                type="button"
+                onClick={() => goToNext(nextIncompleteTask.roomTaskId, false)}
+                className="w-full rounded-full bg-[var(--accent)] px-6 py-3 text-sm font-semibold text-white hover:bg-[var(--accent-hover)]"
+              >
+                {t("continue")}
+              </button>
+            ) : (
+              <button
+                type="button"
+                onClick={() => goToNext(null, true)}
+                className="w-full rounded-full bg-[var(--accent)] px-6 py-3 text-sm font-semibold text-white hover:bg-[var(--accent-hover)]"
+              >
+                {t("backToHomework")}
+              </button>
+            )}
+          </div>
+        ) : null}
 
         {feedback === "incorrect" ? (
           <p className="mt-4 rounded-2xl bg-red-50 px-4 py-3 text-sm font-semibold text-red-700">

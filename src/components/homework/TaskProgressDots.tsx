@@ -41,14 +41,16 @@ function resolveDotTone(task: AssignmentTaskItem, currentTaskId: string): DotTon
   return "pending";
 }
 
-const toneClass: Record<DotTone, string> = {
-  current: "bg-[var(--accent)] ring-2 ring-[var(--accent)] ring-offset-2 ring-offset-[var(--background-soft)]",
-  correct: "bg-emerald-500 hover:bg-emerald-600",
-  incorrect: "bg-red-500 hover:bg-red-600",
-  pending: "bg-[var(--card-border)] hover:bg-[var(--muted)]/40",
-  skipped: "bg-amber-400 hover:bg-amber-500",
-  submitted: "bg-sky-500 hover:bg-sky-600",
+const toneClass: Record<Exclude<DotTone, "current">, string> = {
+  correct: "h-3.5 w-3.5 bg-emerald-500 hover:bg-emerald-600",
+  incorrect: "h-3.5 w-3.5 bg-red-500 hover:bg-red-600",
+  pending: "h-3.5 w-3.5 bg-[var(--card-border)] hover:bg-[var(--muted)]/40",
+  skipped: "h-3.5 w-3.5 bg-amber-400 hover:bg-amber-500",
+  submitted: "h-3.5 w-3.5 bg-sky-500 hover:bg-sky-600",
 };
+
+const currentDotClass =
+  "h-4 w-4 bg-[var(--coral)] ring-[3px] ring-[var(--coral)]/35 ring-offset-2 ring-offset-[var(--background-soft)] shadow-[0_0_0_4px_rgba(244,168,150,0.25)] animate-pulse";
 
 export function TaskProgressDots({
   assignmentId,
@@ -63,25 +65,29 @@ export function TaskProgressDots({
 
   return (
     <div
-      className="mt-3 flex gap-2 overflow-x-auto pb-1 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+      className="mt-3 -mx-1 overflow-x-auto overflow-y-visible px-2 py-2 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
       role="navigation"
       aria-label={t("taskNavLabel")}
     >
-      {tasks.map((task, index) => {
-        const tone = resolveDotTone(task, currentTaskId);
-        const isCurrent = task.roomTaskId === currentTaskId;
+      <div className="flex min-w-min items-center gap-2.5">
+        {tasks.map((task, index) => {
+          const tone = resolveDotTone(task, currentTaskId);
+          const isCurrent = task.roomTaskId === currentTaskId;
 
-        return (
-          <Link
-            key={task.roomTaskId}
-            href={`/dashboard/homework/${assignmentId}?task=${task.roomTaskId}`}
-            title={task.title}
-            aria-label={t("taskNavItem", { n: index + 1, title: task.title })}
-            aria-current={isCurrent ? "step" : undefined}
-            className={`flex h-3.5 w-3.5 shrink-0 rounded-full transition-colors ${toneClass[tone]}`}
-          />
-        );
-      })}
+          return (
+            <Link
+              key={task.roomTaskId}
+              href={`/dashboard/homework/${assignmentId}?task=${task.roomTaskId}`}
+              title={task.title}
+              aria-label={t("taskNavItem", { n: index + 1, title: task.title })}
+              aria-current={isCurrent ? "step" : undefined}
+              className={`flex shrink-0 rounded-full transition-colors ${
+                isCurrent ? currentDotClass : toneClass[tone]
+              }`}
+            />
+          );
+        })}
+      </div>
     </div>
   );
 }

@@ -10,11 +10,12 @@ import {
   fetchTaskAttemptsAction,
   revokeStudentAssignmentAction,
 } from "@/app/[locale]/(app)/dashboard/homework/actions";
-import { AssignTopicModal } from "@/components/homework/AssignTopicModal";
-import { Button } from "@/components/ui/Button";
+import { TaskPreviewDrawer, type TaskPreviewAttempt } from "@/components/homework/TaskPreviewDrawer";
+import { AssignHomeworkPanel } from "@/components/homework/AssignHomeworkPanel";
 import type {
   StudentAnswerHistoryItem,
   StudentProgressOverview,
+  StudentRoomTopicSummary,
   StudentTopicAssignmentSummary,
   TaskAttemptContext,
   TaskAttemptRecord,
@@ -29,8 +30,6 @@ type StudentCardViewProps = {
   roomOptions?: { roomId: string; roomTitle: string }[];
   compact?: boolean;
   showFullPageLink?: boolean;
-  onAssignOpenChange?: (open: boolean) => void;
-  assignHandledExternally?: boolean;
 };
 
 type TabId = "homework" | "topics" | "history";
@@ -90,8 +89,6 @@ export function StudentCardView({
   roomOptions = [],
   compact = false,
   showFullPageLink = false,
-  onAssignOpenChange,
-  assignHandledExternally = false,
 }: StudentCardViewProps) {
   const t = useTranslations("app.homeworkPage");
   const tStudents = useTranslations("app.studentsPage");
@@ -102,11 +99,14 @@ export function StudentCardView({
   const [progress, setProgress] = useState<StudentProgressOverview | null>(null);
   const [history, setHistory] = useState<StudentAnswerHistoryItem[]>([]);
   const [historyLoaded, setHistoryLoaded] = useState(false);
-  const [assignOpen, setAssignOpen] = useState(false);
   const [revokeTargetId, setRevokeTargetId] = useState<string | null>(null);
   const [expandedTaskId, setExpandedTaskId] = useState<string | null>(null);
   const [attempts, setAttempts] = useState<TaskAttemptRecord[]>([]);
   const [taskContext, setTaskContext] = useState<TaskAttemptContext | null>(null);
+  const [previewOpen, setPreviewOpen] = useState(false);
+  const [previewLoading, setPreviewLoading] = useState(false);
+  const [previewTask, setPreviewTask] = useState<TaskAttemptContext | null>(null);
+  const [previewAttempt, setPreviewAttempt] = useState<TaskPreviewAttempt | null>(null);
   const [error, setError] = useState("");
 
   const loadProgress = useCallback(() => {
@@ -148,6 +148,58 @@ export function StudentCardView({
     }
   }, [activeTab, historyLoaded, loadHistory]);
 
+  function toPreviewAttempt(
+    attempt: StudentAnswerHistoryItem | TaskPreviewAttempt,
+  ): TaskPreviewAttempt {
+    return {
+      answerDisplay: attempt.answerDisplay,
+      answerText: attempt.answerText,
+      optionLabels: attempt.optionLabels,
+      imageUrl: attempt.imageUrl,
+      result: attempt.result,
+      attemptNumber: attempt.attemptNumber,
+      usedHint: attempt.usedHint,
+      createdAt: attempt.createdAt,
+    };
+  }
+
+  function openTaskPreview(
+    roomTaskId: string,
+    attempt?: StudentAnswerHistoryItem | TaskPreviewAttempt | null,
+  ) {
+    setPreviewOpen(true);
+    setPreviewLoading(true);
+    setPreviewTask(null);
+    setPreviewAttempt(attempt ? toPreviewAttempt(attempt) : null);
+
+    startTransition(async () => {
+      try {
+        const task = await fetchTaskAttemptContextAction(locale, activeRoomId, roomTaskId);
+        setPreviewTask(task);
+        setError("");
+      } catch (loadError) {
+        setError(loadError instanceof Error ? loadError.message : t("genericError"));
+      } finally {
+        setPreviewLoading(false);
+      }
+    });
+  }
+
+  function closeTaskPreview() {
+    setPreviewOpen(false);
+    setPreviewTask(null);
+    setPreviewAttempt(null);
+    setPreviewLoading(false);
+  }
+
+  function handleAssigned() {
+    loadProgress();
+    if (historyLoaded) {
+      loadHistory();
+    }
+    router.refresh();
+  }
+
   function loadAttempts(roomTaskId: string) {
     if (expandedTaskId === roomTaskId) {
       setExpandedTaskId(null);
@@ -185,15 +237,6 @@ export function StudentCardView({
         setError(revokeError instanceof Error ? revokeError.message : t("genericError"));
       }
     });
-  }
-
-  function openAssignModal() {
-    if (assignHandledExternally) {
-      onAssignOpenChange?.(true);
-    } else {
-      setAssignOpen(true);
-      onAssignOpenChange?.(true);
-    }
   }
 
   const displayName = progress?.studentName ?? studentName;
@@ -313,16 +356,14 @@ export function StudentCardView({
               </button>
             ))}
           </div>
-          {activeTab === "homework" ? (
-            <Button type="button" className="mb-3 shrink-0" onClick={openAssignModal}>
-              {t("assignTitle")}
-            </Button>
-          ) : null}
         </div>
 
         <div className="p-4 sm:p-6">
           {activeTab === "homework" ? (
             <HomeworkTab
+              locale={locale}
+              roomId={activeRoomId}
+              studentId={studentId}
               assignments={progress?.assignments ?? []}
               pending={pending}
               revokeTargetId={revokeTargetId}
@@ -332,13 +373,19 @@ export function StudentCardView({
               onRevokeTarget={setRevokeTargetId}
               onRevoke={handleRevoke}
               onLoadAttempts={loadAttempts}
+              onOpenTaskPreview={openTaskPreview}
+              onAssigned={handleAssigned}
               t={t}
               tStudents={tStudents}
             />
           ) : null}
 
           {activeTab === "topics" ? (
-            <TopicsTab assignments={progress?.assignments ?? []} t={t} tStudents={tStudents} />
+            <TopicsTab
+              roomTopics={progress?.roomTopics ?? []}
+              t={t}
+              tStudents={tStudents}
+            />
           ) : null}
 
           {activeTab === "history" ? (
@@ -346,6 +393,7 @@ export function StudentCardView({
               history={history}
               pending={pending}
               loaded={historyLoaded}
+              onSelectItem={(item) => openTaskPreview(item.roomTaskId, item)}
               t={t}
               tStudents={tStudents}
             />
@@ -359,24 +407,13 @@ export function StudentCardView({
         </p>
       ) : null}
 
-      {!assignHandledExternally ? (
-        <AssignTopicModal
-          locale={locale}
-          roomId={activeRoomId}
-          studentId={studentId}
-          studentName={displayName}
-          open={assignOpen}
-          onClose={() => {
-            setAssignOpen(false);
-            onAssignOpenChange?.(false);
-            loadProgress();
-            if (historyLoaded) {
-              loadHistory();
-            }
-            router.refresh();
-          }}
-        />
-      ) : null}
+      <TaskPreviewDrawer
+        open={previewOpen}
+        loading={previewLoading}
+        task={previewTask}
+        attempt={previewAttempt}
+        onClose={closeTaskPreview}
+      />
     </div>
   );
 }
@@ -511,6 +548,9 @@ function StatIcon({ icon }: { icon: "topics" | "attempts" | "correct" | "incorre
 }
 
 function HomeworkTab({
+  locale,
+  roomId,
+  studentId,
   assignments,
   pending,
   revokeTargetId,
@@ -520,9 +560,14 @@ function HomeworkTab({
   onRevokeTarget,
   onRevoke,
   onLoadAttempts,
+  onOpenTaskPreview,
+  onAssigned,
   t,
   tStudents,
 }: {
+  locale: string;
+  roomId: string;
+  studentId: string;
   assignments: StudentTopicAssignmentSummary[];
   pending: boolean;
   revokeTargetId: string | null;
@@ -532,20 +577,32 @@ function HomeworkTab({
   onRevokeTarget: (id: string | null) => void;
   onRevoke: (id: string) => void;
   onLoadAttempts: (roomTaskId: string) => void;
+  onOpenTaskPreview: (roomTaskId: string) => void;
+  onAssigned: () => void;
   t: ReturnType<typeof useTranslations>;
   tStudents: ReturnType<typeof useTranslations>;
 }) {
-  if (assignments.length === 0) {
-    return (
-      <p className="rounded-2xl border border-dashed border-[var(--card-border)] bg-[var(--background)] p-6 text-center text-sm text-[var(--muted)]">
-        {t("noAssignmentsYet")}
-      </p>
-    );
-  }
-
   return (
-    <div className="space-y-4">
-      {assignments.map((assignment) => (
+    <div className="space-y-6">
+      <AssignHomeworkPanel
+        locale={locale}
+        roomId={roomId}
+        studentId={studentId}
+        assignments={assignments}
+        onAssigned={onAssigned}
+        onOpenTaskPreview={onOpenTaskPreview}
+      />
+
+      {assignments.length === 0 ? (
+        <p className="rounded-2xl border border-dashed border-[var(--card-border)] bg-[var(--background)] p-6 text-center text-sm text-[var(--muted)]">
+          {t("noAssignmentsYet")}
+        </p>
+      ) : (
+        <div className="space-y-4">
+          <h3 className="text-sm font-semibold text-[var(--foreground-strong)]">
+            {tStudents("currentAssignments")}
+          </h3>
+          {assignments.map((assignment) => (
         <div
           key={assignment.id}
           className="overflow-hidden rounded-2xl border border-[var(--card-border)] bg-[var(--background)]"
@@ -609,26 +666,32 @@ function HomeworkTab({
           <ul className="divide-y divide-[var(--card-border)]">
             {assignment.tasks.map((task) => (
               <li key={task.roomTaskId} className="bg-white">
-                <button
-                  type="button"
-                  onClick={() => onLoadAttempts(task.roomTaskId)}
-                  className="flex w-full items-center justify-between gap-3 px-4 py-3 text-left hover:bg-[var(--background)]"
-                >
-                  <div className="min-w-0">
+                <div className="flex items-center gap-2 px-4 py-3">
+                  <button
+                    type="button"
+                    onClick={() => onOpenTaskPreview(task.roomTaskId)}
+                    className="min-w-0 flex-1 text-left hover:opacity-80"
+                  >
                     <span className="block text-sm font-medium text-[var(--foreground-strong)]">
                       {task.title}
                     </span>
                     <span className="mt-1 inline-block rounded-full bg-[var(--accent-soft)] px-2 py-0.5 text-[10px] font-semibold uppercase text-[var(--accent)]">
                       {answerTypeLabel(task.answerType)}
                     </span>
-                  </div>
-                  <TaskStatusBadge
-                    status={task.progress?.status ?? "IN_PROGRESS"}
-                    errorCount={task.progress?.errorCount ?? 0}
-                    t={t}
-                    expanded={expandedTaskId === task.roomTaskId}
-                  />
-                </button>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => onLoadAttempts(task.roomTaskId)}
+                    className="shrink-0"
+                  >
+                    <TaskStatusBadge
+                      status={task.progress?.status ?? "IN_PROGRESS"}
+                      errorCount={task.progress?.errorCount ?? 0}
+                      t={t}
+                      expanded={expandedTaskId === task.roomTaskId}
+                    />
+                  </button>
+                </div>
 
                 {expandedTaskId === task.roomTaskId ? (
                   <div className="border-t border-[var(--card-border)] bg-[var(--background)] px-4 py-4">
@@ -696,76 +759,111 @@ function HomeworkTab({
             ))}
           </ul>
         </div>
-      ))}
+          ))}
+        </div>
+      )}
     </div>
   );
 }
 
 function TopicsTab({
-  assignments,
+  roomTopics,
   t,
   tStudents,
 }: {
-  assignments: StudentTopicAssignmentSummary[];
+  roomTopics: StudentRoomTopicSummary[];
   t: ReturnType<typeof useTranslations>;
   tStudents: ReturnType<typeof useTranslations>;
 }) {
-  if (assignments.length === 0) {
+  if (roomTopics.length === 0) {
     return (
       <p className="rounded-2xl border border-dashed border-[var(--card-border)] bg-[var(--background)] p-6 text-center text-sm text-[var(--muted)]">
-        {tStudents("noTopicsYet")}
+        {t("noTopicsInRoom")}
       </p>
     );
   }
 
   return (
     <div className="grid gap-4 sm:grid-cols-2">
-      {assignments.map((assignment) => {
+      {roomTopics.map((topic) => {
         const percent =
-          assignment.totalTasks > 0
-            ? Math.round((assignment.completedTasks / assignment.totalTasks) * 100)
+          topic.totalTasks > 0
+            ? Math.round((topic.completedTasks / topic.totalTasks) * 100)
             : 0;
+        const hasProgress = topic.startedTasks > 0;
 
         return (
           <div
-            key={assignment.id}
+            key={topic.roomTopicId}
             className="rounded-2xl border border-[var(--card-border)] bg-[var(--background)] p-4"
           >
-            <p className="font-semibold text-[var(--foreground-strong)]">{assignment.topicTitle}</p>
+            <div className="flex flex-wrap items-start justify-between gap-2">
+              <p className="font-semibold text-[var(--foreground-strong)]">{topic.title}</p>
+              <div className="flex flex-wrap gap-1.5">
+                {topic.isAssigned ? (
+                  <span className="rounded-full bg-[var(--accent-soft)] px-2.5 py-1 text-[10px] font-semibold uppercase text-[var(--accent)]">
+                    {tStudents("homeworkBadge")}
+                  </span>
+                ) : null}
+                {!hasProgress ? (
+                  <span className="rounded-full bg-gray-100 px-2.5 py-1 text-[10px] font-semibold text-gray-600">
+                    {tStudents("topicNotStarted")}
+                  </span>
+                ) : null}
+              </div>
+            </div>
+
+            <p className="mt-1 text-xs text-[var(--muted)]">
+              {tStudents("tasksInTopic", { count: topic.totalTasks })}
+            </p>
+
             <div className="mt-3">
               <div className="flex items-center justify-between text-xs text-[var(--muted)]">
                 <span>
-                  {t("progress", {
-                    done: assignment.completedTasks,
-                    total: assignment.totalTasks,
-                  })}
+                  {hasProgress
+                    ? t("progress", {
+                        done: topic.completedTasks,
+                        total: topic.totalTasks,
+                      })
+                    : tStudents("noProgressYet")}
                 </span>
                 <span>{percent}%</span>
               </div>
               <div className="mt-2 h-2 overflow-hidden rounded-full bg-white">
                 <div
-                  className="h-full rounded-full bg-[var(--accent)] transition-all"
+                  className={`h-full rounded-full transition-all ${
+                    hasProgress ? "bg-[var(--accent)]" : "bg-[var(--card-border)]"
+                  }`}
                   style={{ width: `${percent}%` }}
                 />
               </div>
             </div>
-            <div className="mt-3 flex flex-wrap gap-2 text-xs">
-              {assignment.errorTasks > 0 ? (
-                <span className="rounded-full bg-red-50 px-2.5 py-1 font-semibold text-red-600">
-                  {assignment.errorTasks} {t("statsErrors").toLowerCase()}
-                </span>
-              ) : null}
-              {assignment.hintsUsed > 0 ? (
-                <span className="rounded-full bg-amber-50 px-2.5 py-1 font-semibold text-amber-700">
-                  {assignment.hintsUsed} {t("statsHints").toLowerCase()}
-                </span>
-              ) : null}
-              {assignment.completedTasks === assignment.totalTasks && assignment.totalTasks > 0 ? (
-                <span className="rounded-full bg-emerald-50 px-2.5 py-1 font-semibold text-emerald-700">
-                  {tStudents("topicDone")}
-                </span>
-              ) : null}
-            </div>
+
+            {hasProgress ? (
+              <div className="mt-3 flex flex-wrap gap-2 text-xs">
+                {topic.errorTasks > 0 ? (
+                  <span className="rounded-full bg-red-50 px-2.5 py-1 font-semibold text-red-600">
+                    {topic.errorTasks} {t("statsErrors").toLowerCase()}
+                  </span>
+                ) : null}
+                {topic.hintsUsed > 0 ? (
+                  <span className="rounded-full bg-amber-50 px-2.5 py-1 font-semibold text-amber-700">
+                    {topic.hintsUsed} {t("statsHints").toLowerCase()}
+                  </span>
+                ) : null}
+                {topic.completedTasks === topic.totalTasks && topic.totalTasks > 0 ? (
+                  <span className="rounded-full bg-emerald-50 px-2.5 py-1 font-semibold text-emerald-700">
+                    {tStudents("topicDone")}
+                  </span>
+                ) : null}
+                {topic.startedTasks > 0 &&
+                topic.completedTasks < topic.totalTasks ? (
+                  <span className="rounded-full bg-blue-50 px-2.5 py-1 font-semibold text-blue-700">
+                    {tStudents("inProgress", { count: topic.startedTasks })}
+                  </span>
+                ) : null}
+              </div>
+            ) : null}
           </div>
         );
       })}
@@ -777,12 +875,14 @@ function HistoryTab({
   history,
   pending,
   loaded,
+  onSelectItem,
   t,
   tStudents,
 }: {
   history: StudentAnswerHistoryItem[];
   pending: boolean;
   loaded: boolean;
+  onSelectItem: (item: StudentAnswerHistoryItem) => void;
   t: ReturnType<typeof useTranslations>;
   tStudents: ReturnType<typeof useTranslations>;
 }) {
@@ -823,7 +923,11 @@ function HistoryTab({
           </thead>
           <tbody className="divide-y divide-[var(--card-border)] bg-white">
             {history.map((item) => (
-              <tr key={item.id} className="hover:bg-[var(--background)]/60">
+              <tr
+                key={item.id}
+                className="cursor-pointer hover:bg-[var(--accent-soft)]/40"
+                onClick={() => onSelectItem(item)}
+              >
                 <td className="whitespace-nowrap px-4 py-3 text-xs text-[var(--muted)]">
                   {new Date(item.createdAt).toLocaleString("ru-RU", {
                     day: "2-digit",

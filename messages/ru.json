@@ -229,7 +229,8 @@
       "progressPageTitle": "Ваш прогресс",
       "topicsCount": "Тем",
       "taskNavLabel": "Навигация по заданиям",
-      "taskNavItem": "Задание {n}: {title}"
+      "taskNavItem": "Задание {n}: {title}",
+      "taskAlreadyCompleted": "Задание уже выполнено"
     },
     "assignmentsPage": {
       "eyebrow": "Задания",
@@ -288,7 +289,27 @@
       "colHints": "Подсказки",
       "colTime": "Время",
       "photoAnswer": "Фото",
-      "no": "Нет"
+      "no": "Нет",
+      "closePreview": "Закрыть",
+      "taskPreview": "Задание",
+      "loadingPreview": "Загрузка…",
+      "taskCondition": "Условие",
+      "taskImage": "Изображение к заданию",
+      "studentAnswer": "Ответ ученика",
+      "answerType": "Тип ответа",
+      "homeworkBadge": "Домашнее",
+      "topicNotStarted": "Не начато",
+      "tasksInTopic": "{count, plural, one {# задание} few {# задания} many {# заданий} other {# заданий}}",
+      "noProgressYet": "Прогресса пока нет",
+      "inProgress": "Начато: {count}",
+      "assignNewHomework": "Назначить домашнее задание",
+      "currentAssignments": "Текущие назначения",
+      "selectedCount": "Выбрано: {count}",
+      "assignSelected": "Назначить выбранные",
+      "clearSelection": "Очистить выбор",
+      "alreadyAssigned": "Уже назначено",
+      "previewTask": "Просмотр",
+      "loadingTopics": "Загрузка тем…"
     },
     "reviewPage": {
       "eyebrow": "Проверка",

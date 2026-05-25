@@ -9,6 +9,7 @@ import { requireSession } from "@/lib/session";
 import {
   assignTopicToStudent,
   assertStudentOwnsTask,
+  assertTaskInProgress,
   assertTutorRoomAccess,
   ensureTaskProgress,
   getAssignmentById,
@@ -174,8 +175,10 @@ export async function submitTaskAnswerAction(
     throw new Error("Задание не найдено");
   }
 
-  const grade = gradeRoomTaskAnswer(gradingTask, payload);
+  await assertTaskInProgress(studentId, roomTaskId);
   const progress = await ensureTaskProgress(studentId, roomTaskId);
+
+  const grade = gradeRoomTaskAnswer(gradingTask, payload);
 
   const usedHint = Boolean(progress.hintUsedAt);
 
@@ -260,6 +263,7 @@ export async function skipTaskAction(locale: string, assignmentId: string, roomT
     throw new Error("Назначение не найдено");
   }
 
+  await assertTaskInProgress(studentId, roomTaskId);
   const progress = await ensureTaskProgress(studentId, roomTaskId);
 
   await prisma.studentTaskProgress.update({

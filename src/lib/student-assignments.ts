@@ -1,5 +1,6 @@
 import type { TaskProgressStatus } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
+import { isTaskCompleted } from "@/lib/task-progress";
 
 export type AssignmentTaskItem = {
   id: string;
@@ -40,12 +41,25 @@ export type StudentExtendedStats = {
   accuracyPercent: number;
 };
 
+export type StudentRoomTopicSummary = {
+  roomTopicId: string;
+  title: string;
+  description: string | null;
+  totalTasks: number;
+  completedTasks: number;
+  errorTasks: number;
+  hintsUsed: number;
+  startedTasks: number;
+  isAssigned: boolean;
+};
+
 export type StudentProgressOverview = {
   studentId: string;
   studentName: string;
   studentEmail: string;
   userHandle: string;
   assignments: StudentTopicAssignmentSummary[];
+  roomTopics: StudentRoomTopicSummary[];
   totals: {
     assignedTasks: number;
     completedTasks: number;
@@ -57,10 +71,13 @@ export type StudentProgressOverview = {
 
 export type StudentAnswerHistoryItem = {
   id: string;
+  roomTaskId: string;
   createdAt: Date;
   topicTitle: string;
   taskTitle: string;
   answerDisplay: string;
+  answerText: string | null;
+  optionLabels: string[];
   imageUrl: string | null;
   result: "CORRECT" | "INCORRECT" | "SUBMITTED" | "SKIPPED";
   attemptNumber: number;
@@ -81,9 +98,13 @@ export type TaskAttemptRecord = {
 
 export type TaskAttemptContext = {
   title: string;
+  topicTitle: string;
   answerType: string;
   correctAnswer: string | null;
   description: string | null;
+  imageUrl: string | null;
+  hint: string | null;
+  choiceOptions: { id: string; text: string; isCorrect: boolean }[];
 };
 
 export type TeacherStudentOverview = {
@@ -105,10 +126,20 @@ export type StudentRoomOption = {
   roomTitle: string;
 };
 
-const COMPLETED_STATUSES: TaskProgressStatus[] = ["CORRECT", "SKIPPED", "SUBMITTED"];
-
 function isCompleted(status: TaskProgressStatus) {
-  return COMPLETED_STATUSES.includes(status);
+  return isTaskCompleted(status);
+}
+
+export async function assertTaskInProgress(studentId: string, roomTaskId: string) {
+  const progress = await prisma.studentTaskProgress.findUnique({
+    where: { studentId_roomTaskId: { studentId, roomTaskId } },
+  });
+
+  if (progress && isTaskCompleted(progress.status)) {
+    throw new Error("Задание уже выполнено");
+  }
+
+  return progress;
 }
 
 function emailToHandle(email: string) {
@@ -218,6 +249,71 @@ async function computeStudentRoomStats(
     hintsUsed,
     accuracyPercent,
   };
+}
+
+async function getStudentRoomTopicsForTutor(
+  roomId: string,
+  studentId: string,
+  roomAssignments: StudentTopicAssignmentSummary[],
+): Promise<StudentRoomTopicSummary[]> {
+  const topics = await prisma.roomTopic.findMany({
+    where: { roomId },
+    orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }],
+    include: {
+      tasks: {
+        orderBy: [{ sortOrder: "asc" }, { title: "asc" }],
+        select: { id: true },
+      },
+    },
+  });
+
+  const assignedTopicIds = new Set(roomAssignments.map((assignment) => assignment.roomTopicId));
+  const allTaskIds = topics.flatMap((topic) => topic.tasks.map((task) => task.id));
+
+  const progressRows =
+    allTaskIds.length > 0
+      ? await prisma.studentTaskProgress.findMany({
+          where: { studentId, roomTaskId: { in: allTaskIds } },
+        })
+      : [];
+
+  const progressByTaskId = new Map(progressRows.map((row) => [row.roomTaskId, row]));
+
+  return topics.map((topic) => {
+    let completedTasks = 0;
+    let errorTasks = 0;
+    let hintsUsed = 0;
+    let startedTasks = 0;
+
+    for (const task of topic.tasks) {
+      const progress = progressByTaskId.get(task.id);
+      if (!progress) {
+        continue;
+      }
+      startedTasks += 1;
+      if (isCompleted(progress.status)) {
+        completedTasks += 1;
+      }
+      if (progress.errorCount > 0) {
+        errorTasks += 1;
+      }
+      if (progress.hintUsedAt) {
+        hintsUsed += 1;
+      }
+    }
+
+    return {
+      roomTopicId: topic.id,
+      title: topic.title,
+      description: topic.description,
+      totalTasks: topic.tasks.length,
+      completedTasks,
+      errorTasks,
+      hintsUsed,
+      startedTasks,
+      isAssigned: assignedTopicIds.has(topic.id),
+    };
+  });
 }
 
 export async function assignTopicToStudent(
@@ -552,6 +648,7 @@ export async function getStudentProgressForTutor(
   );
 
   const extendedStats = await computeStudentRoomStats(studentId, roomId, roomAssignments);
+  const roomTopics = await getStudentRoomTopicsForTutor(roomId, studentId, roomAssignments);
 
   return {
     studentId: member.user.id,
@@ -559,6 +656,7 @@ export async function getStudentProgressForTutor(
     studentEmail: member.user.email,
     userHandle: emailToHandle(member.user.email),
     assignments: roomAssignments,
+    roomTopics,
     totals,
     extendedStats,
   };
@@ -632,10 +730,13 @@ export async function getStudentAnswerHistoryForTutor(
 
       items.push({
         id: attempt.id,
+        roomTaskId: progress.roomTaskId,
         createdAt: attempt.createdAt,
         topicTitle: task.topicTitle,
         taskTitle: task.title,
         answerDisplay: formatAnswerDisplay(attempt, task.optionMap),
+        answerText: attempt.answerText,
+        optionLabels: attempt.selectedOptionIds.map((id) => task.optionMap.get(id) ?? id),
         imageUrl: attempt.imageUrl,
         result: attemptResult(attempt.isCorrect, progress.status),
         attemptNumber: index + 1,
@@ -687,16 +788,18 @@ export async function getNextTaskInAssignment(assignmentId: string, studentId: s
 }
 
 export async function ensureTaskProgress(studentId: string, roomTaskId: string) {
-  return prisma.studentTaskProgress.upsert({
-    where: {
-      studentId_roomTaskId: { studentId, roomTaskId },
-    },
-    create: {
+  const existing = await prisma.studentTaskProgress.findUnique({
+    where: { studentId_roomTaskId: { studentId, roomTaskId } },
+  });
+
+  if (existing) {
+    return existing;
+  }
+
+  return prisma.studentTaskProgress.create({
+    data: {
       studentId,
       roomTaskId,
-      status: "IN_PROGRESS",
-    },
-    update: {
       status: "IN_PROGRESS",
     },
   });
@@ -768,10 +871,30 @@ export async function getTaskAttemptContextForTutor(
       answerType: true,
       correctAnswer: true,
       description: true,
+      imageUrl: true,
+      hint: true,
+      roomTopic: { select: { title: true } },
+      choiceOptions: {
+        orderBy: { sortOrder: "asc" },
+        select: { id: true, text: true, isCorrect: true },
+      },
     },
   });
 
-  return task;
+  if (!task) {
+    return null;
+  }
+
+  return {
+    title: task.title,
+    topicTitle: task.roomTopic.title,
+    answerType: task.answerType,
+    correctAnswer: task.correctAnswer,
+    description: task.description,
+    imageUrl: task.imageUrl,
+    hint: task.hint,
+    choiceOptions: task.choiceOptions,
+  };
 }
 
 export async function getStudentRoomsForTutor(

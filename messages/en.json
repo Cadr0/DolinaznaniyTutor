@@ -229,7 +229,8 @@
       "progressPageTitle": "Your progress",
       "topicsCount": "Topics",
       "taskNavLabel": "Task navigation",
-      "taskNavItem": "Task {n}: {title}"
+      "taskNavItem": "Task {n}: {title}",
+      "taskAlreadyCompleted": "This task is already completed"
     },
     "assignmentsPage": {
       "eyebrow": "Assignments",
@@ -288,7 +289,27 @@
       "colHints": "Hints",
       "colTime": "Time",
       "photoAnswer": "Photo",
-      "no": "No"
+      "no": "No",
+      "closePreview": "Close",
+      "taskPreview": "Task",
+      "loadingPreview": "Loading…",
+      "taskCondition": "Task condition",
+      "taskImage": "Task image",
+      "studentAnswer": "Student answer",
+      "answerType": "Answer type",
+      "homeworkBadge": "Homework",
+      "topicNotStarted": "Not started",
+      "tasksInTopic": "{count, plural, one {# task} other {# tasks}}",
+      "noProgressYet": "No progress yet",
+      "inProgress": "Started: {count}",
+      "assignNewHomework": "Assign homework",
+      "currentAssignments": "Current assignments",
+      "selectedCount": "Selected: {count}",
+      "assignSelected": "Assign selected",
+      "clearSelection": "Clear selection",
+      "alreadyAssigned": "Already assigned",
+      "previewTask": "Preview",
+      "loadingTopics": "Loading topics…"
     },
     "reviewPage": {
       "eyebrow": "Review",
