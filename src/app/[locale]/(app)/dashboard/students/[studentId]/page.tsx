@@ -44,34 +44,22 @@ export default async function StudentDetailPage({ params, searchParams }: Props)
   }
 
   return (
-    <section className="mx-auto max-w-4xl px-4 py-6 sm:px-6 sm:py-8">
+    <section className="mx-auto max-w-5xl px-4 py-6 sm:px-6 sm:py-8">
       <Link
         href="/dashboard/students"
-        className="text-sm font-semibold text-[var(--accent)] hover:underline"
+        className="inline-flex items-center gap-1 text-sm font-semibold text-[var(--accent)] hover:underline"
       >
         ← {t("backToList")}
       </Link>
 
-      <div className="mt-4 rounded-[2rem] border border-[var(--card-border)] bg-white p-5 shadow-[var(--shadow-card)] sm:p-8">
-        <span className="rounded-full bg-[var(--accent-soft)] px-4 py-1.5 text-sm font-semibold text-[var(--accent)]">
-          {t("cardEyebrow")}
-        </span>
-        <h1 className="mt-4 font-display text-3xl text-[var(--foreground-strong)]">
-          {progress.studentName}
-        </h1>
-        <p className="mt-2 text-sm text-[var(--muted)]">{t("cardDescription")}</p>
-
-        <div className="mt-6">
-          <StudentCardView
-            locale={locale}
-            studentId={studentId}
-            studentName={progress.studentName}
-            studentEmail={progress.studentEmail}
-            roomId={roomId}
-            roomOptions={roomOptions}
-          />
-        </div>
-      </div>
+      <StudentCardView
+        locale={locale}
+        studentId={studentId}
+        studentName={progress.studentName}
+        studentEmail={progress.studentEmail}
+        roomId={roomId}
+        roomOptions={roomOptions}
+      />
     </section>
   );
 }

@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState, useTransition } from "react";
 import { useTranslations } from "next-intl";
 import { Link, useRouter } from "@/i18n/navigation";
 import {
+  fetchStudentAnswerHistoryAction,
   fetchStudentProgressAction,
   fetchTaskAttemptContextAction,
   fetchTaskAttemptsAction,
@@ -12,7 +13,9 @@ import {
 import { AssignTopicModal } from "@/components/homework/AssignTopicModal";
 import { Button } from "@/components/ui/Button";
 import type {
+  StudentAnswerHistoryItem,
   StudentProgressOverview,
+  StudentTopicAssignmentSummary,
   TaskAttemptContext,
   TaskAttemptRecord,
 } from "@/lib/student-assignments";
@@ -30,6 +33,8 @@ type StudentCardViewProps = {
   assignHandledExternally?: boolean;
 };
 
+type TabId = "homework" | "topics" | "history";
+
 function statusLabel(status: string, t: ReturnType<typeof useTranslations>) {
   switch (status) {
     case "CORRECT":
@@ -41,6 +46,28 @@ function statusLabel(status: string, t: ReturnType<typeof useTranslations>) {
     default:
       return t("statusPending");
   }
+}
+
+function historyResultLabel(result: StudentAnswerHistoryItem["result"], t: ReturnType<typeof useTranslations>) {
+  switch (result) {
+    case "CORRECT":
+      return t("statusCorrect");
+    case "INCORRECT":
+      return t("statusIncorrect");
+    case "SKIPPED":
+      return t("statusSkipped");
+    default:
+      return t("statusSubmitted");
+  }
+}
+
+function formatDuration(seconds: number | null) {
+  if (seconds === null) {
+    return "—";
+  }
+  const mins = Math.floor(seconds / 60);
+  const secs = seconds % 60;
+  return `${String(mins).padStart(2, "0")}:${String(secs).padStart(2, "0")}`;
 }
 
 function answerTypeLabel(type: string) {
@@ -71,7 +98,10 @@ export function StudentCardView({
   const router = useRouter();
   const [pending, startTransition] = useTransition();
   const [activeRoomId, setActiveRoomId] = useState(roomId);
+  const [activeTab, setActiveTab] = useState<TabId>("homework");
   const [progress, setProgress] = useState<StudentProgressOverview | null>(null);
+  const [history, setHistory] = useState<StudentAnswerHistoryItem[]>([]);
+  const [historyLoaded, setHistoryLoaded] = useState(false);
   const [assignOpen, setAssignOpen] = useState(false);
   const [revokeTargetId, setRevokeTargetId] = useState<string | null>(null);
   const [expandedTaskId, setExpandedTaskId] = useState<string | null>(null);
@@ -91,9 +121,32 @@ export function StudentCardView({
     });
   }, [activeRoomId, locale, studentId, t]);
 
+  const loadHistory = useCallback(() => {
+    startTransition(async () => {
+      try {
+        const data = await fetchStudentAnswerHistoryAction(locale, activeRoomId, studentId);
+        setHistory(data);
+        setHistoryLoaded(true);
+        setError("");
+      } catch (loadError) {
+        setError(loadError instanceof Error ? loadError.message : t("genericError"));
+      }
+    });
+  }, [activeRoomId, locale, studentId, t]);
+
   useEffect(() => {
     loadProgress();
+    setHistoryLoaded(false);
+    setHistory([]);
+    setExpandedTaskId(null);
+    setAttempts([]);
   }, [loadProgress]);
+
+  useEffect(() => {
+    if (activeTab === "history" && !historyLoaded) {
+      loadHistory();
+    }
+  }, [activeTab, historyLoaded, loadHistory]);
 
   function loadAttempts(roomTaskId: string) {
     if (expandedTaskId === roomTaskId) {
@@ -124,6 +177,9 @@ export function StudentCardView({
         await revokeStudentAssignmentAction(locale, activeRoomId, assignmentId);
         setRevokeTargetId(null);
         loadProgress();
+        if (historyLoaded) {
+          loadHistory();
+        }
         router.refresh();
       } catch (revokeError) {
         setError(revokeError instanceof Error ? revokeError.message : t("genericError"));
@@ -131,25 +187,88 @@ export function StudentCardView({
     });
   }
 
+  function openAssignModal() {
+    if (assignHandledExternally) {
+      onAssignOpenChange?.(true);
+    } else {
+      setAssignOpen(true);
+      onAssignOpenChange?.(true);
+    }
+  }
+
   const displayName = progress?.studentName ?? studentName;
   const displayEmail = progress?.studentEmail ?? studentEmail;
+  const userHandle = progress?.userHandle ?? `@${displayEmail.split("@")[0] ?? "user"}`;
+  const stats = progress?.extendedStats;
+
+  const tabs: { id: TabId; label: string }[] = [
+    { id: "homework", label: tStudents("tabHomework") },
+    { id: "topics", label: tStudents("tabTopics") },
+    { id: "history", label: tStudents("tabHistory") },
+  ];
 
   return (
-    <div className="space-y-5">
-      <div className="flex flex-wrap items-start justify-between gap-3">
-        <div>
-          <p className="text-lg font-semibold text-[var(--foreground-strong)]">{displayName}</p>
-          <p className="text-sm text-[var(--muted)]">{displayEmail}</p>
+    <div className={compact ? "space-y-4" : "mt-4 space-y-5"}>
+      {!compact ? (
+        <StudentHero
+          name={displayName}
+          handle={userHandle}
+          email={displayEmail}
+          accuracy={stats?.accuracyPercent ?? 0}
+          totalAnswers={stats?.totalAttempts ?? 0}
+          accuracyLabel={tStudents("accuracy")}
+          totalAnswersLabel={tStudents("totalAnswers")}
+        />
+      ) : (
+        <div className="flex flex-wrap items-start justify-between gap-3">
+          <div>
+            <p className="text-lg font-semibold text-[var(--foreground-strong)]">{displayName}</p>
+            <p className="text-sm text-[var(--muted)]">{userHandle}</p>
+          </div>
+          {showFullPageLink ? (
+            <Link
+              href={`/dashboard/students/${studentId}?roomId=${activeRoomId}`}
+              className="text-sm font-semibold text-[var(--accent)] hover:underline"
+            >
+              {tStudents("openFullCard")} →
+            </Link>
+          ) : null}
         </div>
-        {showFullPageLink ? (
-          <Link
-            href={`/dashboard/students/${studentId}?roomId=${activeRoomId}`}
-            className="text-sm font-semibold text-[var(--accent)] hover:underline"
-          >
-            {tStudents("openFullCard")} →
-          </Link>
-        ) : null}
-      </div>
+      )}
+
+      {stats ? (
+        <div className={`grid gap-3 ${compact ? "grid-cols-2 sm:grid-cols-3" : "grid-cols-2 sm:grid-cols-5"}`}>
+          <StatCard
+            icon="topics"
+            value={String(stats.topicsCompleted)}
+            label={tStudents("statTopicsCompleted")}
+          />
+          <StatCard
+            icon="attempts"
+            value={String(stats.totalAttempts)}
+            label={tStudents("statTotalAttempts")}
+          />
+          <StatCard
+            icon="correct"
+            value={String(stats.correctAnswers)}
+            label={tStudents("statCorrect")}
+            accent="success"
+          />
+          {!compact ? (
+            <StatCard
+              icon="incorrect"
+              value={String(stats.incorrectAnswers)}
+              label={tStudents("statIncorrect")}
+              accent="danger"
+            />
+          ) : null}
+          <StatCard
+            icon="hints"
+            value={String(stats.hintsUsed)}
+            label={tStudents("statHints")}
+          />
+        </div>
+      ) : null}
 
       {roomOptions.length > 1 ? (
         <div className="flex flex-wrap gap-2">
@@ -161,10 +280,12 @@ export function StudentCardView({
                 setActiveRoomId(room.roomId);
                 setExpandedTaskId(null);
                 setAttempts([]);
+                setHistoryLoaded(false);
+                setHistory([]);
               }}
               className={`touch-target rounded-full px-4 py-2 text-sm font-semibold transition-colors ${
                 activeRoomId === room.roomId
-                  ? "bg-[var(--accent)] text-white"
+                  ? "bg-[var(--accent)] text-white shadow-[var(--shadow-soft)]"
                   : "border border-[var(--card-border)] bg-white text-[var(--foreground-strong)] hover:border-[var(--accent)]/40"
               }`}
             >
@@ -174,54 +295,264 @@ export function StudentCardView({
         </div>
       ) : null}
 
-      {progress ? (
-        <div className={`grid gap-2 ${compact ? "grid-cols-3" : "grid-cols-2 sm:grid-cols-4"}`}>
-          <StatCard
-            value={`${progress.totals.completedTasks}/${progress.totals.assignedTasks}`}
-            label={t("statsCompleted")}
-          />
-          <StatCard value={String(progress.totals.errorTasks)} label={t("statsErrors")} />
-          <StatCard value={String(progress.totals.hintsUsed)} label={t("statsHints")} />
-          {!compact ? (
-            <StatCard
-              value={String(progress.assignments.length)}
-              label={tStudents("topicsAssigned")}
+      <div className="overflow-hidden rounded-[1.5rem] border border-[var(--card-border)] bg-white shadow-[var(--shadow-card)]">
+        <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[var(--card-border)] px-4 pt-3 sm:px-6">
+          <div className="flex gap-1 overflow-x-auto scrollbar-hide">
+            {tabs.map((tab) => (
+              <button
+                key={tab.id}
+                type="button"
+                onClick={() => setActiveTab(tab.id)}
+                className={`shrink-0 border-b-2 px-4 py-3 text-sm font-semibold transition-colors ${
+                  activeTab === tab.id
+                    ? "border-[var(--accent)] text-[var(--accent)]"
+                    : "border-transparent text-[var(--muted)] hover:text-[var(--foreground-strong)]"
+                }`}
+              >
+                {tab.label}
+              </button>
+            ))}
+          </div>
+          {activeTab === "homework" ? (
+            <Button type="button" className="mb-3 shrink-0" onClick={openAssignModal}>
+              {t("assignTitle")}
+            </Button>
+          ) : null}
+        </div>
+
+        <div className="p-4 sm:p-6">
+          {activeTab === "homework" ? (
+            <HomeworkTab
+              assignments={progress?.assignments ?? []}
+              pending={pending}
+              revokeTargetId={revokeTargetId}
+              expandedTaskId={expandedTaskId}
+              attempts={attempts}
+              taskContext={taskContext}
+              onRevokeTarget={setRevokeTargetId}
+              onRevoke={handleRevoke}
+              onLoadAttempts={loadAttempts}
+              t={t}
+              tStudents={tStudents}
+            />
+          ) : null}
+
+          {activeTab === "topics" ? (
+            <TopicsTab assignments={progress?.assignments ?? []} t={t} tStudents={tStudents} />
+          ) : null}
+
+          {activeTab === "history" ? (
+            <HistoryTab
+              history={history}
+              pending={pending}
+              loaded={historyLoaded}
+              t={t}
+              tStudents={tStudents}
             />
           ) : null}
         </div>
-      ) : null}
+      </div>
 
-      <Button
-        type="button"
-        className="w-full sm:w-auto"
-        onClick={() => {
-          if (assignHandledExternally) {
-            onAssignOpenChange?.(true);
-          } else {
-            setAssignOpen(true);
-            onAssignOpenChange?.(true);
-          }
-        }}
-      >
-        {t("assignTitle")}
-      </Button>
-
-      {progress?.assignments.length === 0 ? (
-        <p className="rounded-2xl bg-[var(--background)] p-4 text-sm text-[var(--muted)]">
-          {t("noAssignmentsYet")}
+      {error ? (
+        <p className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+          {error}
         </p>
       ) : null}
 
-      {progress?.assignments.map((assignment) => (
+      {!assignHandledExternally ? (
+        <AssignTopicModal
+          locale={locale}
+          roomId={activeRoomId}
+          studentId={studentId}
+          studentName={displayName}
+          open={assignOpen}
+          onClose={() => {
+            setAssignOpen(false);
+            onAssignOpenChange?.(false);
+            loadProgress();
+            if (historyLoaded) {
+              loadHistory();
+            }
+            router.refresh();
+          }}
+        />
+      ) : null}
+    </div>
+  );
+}
+
+function StudentHero({
+  name,
+  handle,
+  email,
+  accuracy,
+  totalAnswers,
+  accuracyLabel,
+  totalAnswersLabel,
+}: {
+  name: string;
+  handle: string;
+  email: string;
+  accuracy: number;
+  totalAnswers: number;
+  accuracyLabel: string;
+  totalAnswersLabel: string;
+}) {
+  return (
+    <div className="overflow-hidden rounded-[1.75rem] bg-gradient-to-br from-[var(--accent)] via-[#349786] to-[#2a6f64] p-6 text-white shadow-[var(--shadow-soft)] sm:p-8">
+      <div className="flex flex-col items-center text-center">
+        <div className="flex h-16 w-16 items-center justify-center rounded-full bg-white/20 ring-4 ring-white/30">
+          <svg width="32" height="32" viewBox="0 0 24 24" fill="none" aria-hidden>
+            <circle cx="12" cy="8" r="4" stroke="currentColor" strokeWidth="1.8" />
+            <path
+              d="M5 20c0-3.3 2.7-6 7-6s7 2.7 7 6"
+              stroke="currentColor"
+              strokeWidth="1.8"
+              strokeLinecap="round"
+            />
+          </svg>
+        </div>
+        <h1 className="mt-4 font-display text-2xl font-bold sm:text-3xl">{name}</h1>
+        <p className="mt-1 text-sm text-white/80">{handle}</p>
+        <p className="mt-0.5 text-xs text-white/60">{email}</p>
+        <div className="mt-5 flex flex-wrap justify-center gap-8 sm:gap-12">
+          <div>
+            <p className="text-3xl font-bold">{accuracy.toFixed(1)}%</p>
+            <p className="mt-1 text-sm text-white/80">{accuracyLabel}</p>
+          </div>
+          <div>
+            <p className="text-3xl font-bold">{totalAnswers}</p>
+            <p className="mt-1 text-sm text-white/80">{totalAnswersLabel}</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function StatCard({
+  icon,
+  value,
+  label,
+  accent,
+}: {
+  icon: "topics" | "attempts" | "correct" | "incorrect" | "hints";
+  value: string;
+  label: string;
+  accent?: "success" | "danger";
+}) {
+  const iconColor =
+    accent === "success"
+      ? "text-emerald-600 bg-emerald-50"
+      : accent === "danger"
+        ? "text-red-600 bg-red-50"
+        : "text-[var(--accent)] bg-[var(--accent-soft)]";
+
+  return (
+    <div className="rounded-2xl border border-[var(--card-border)] bg-white p-4 text-center shadow-[var(--shadow-card)]">
+      <div
+        className={`mx-auto flex h-10 w-10 items-center justify-center rounded-xl ${iconColor}`}
+      >
+        <StatIcon icon={icon} />
+      </div>
+      <p className="mt-3 text-2xl font-bold text-[var(--foreground-strong)]">{value}</p>
+      <p className="mt-1 text-xs font-medium text-[var(--muted)]">{label}</p>
+    </div>
+  );
+}
+
+function StatIcon({ icon }: { icon: "topics" | "attempts" | "correct" | "incorrect" | "hints" }) {
+  switch (icon) {
+    case "topics":
+      return (
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden>
+          <path
+            d="M7 5h9a2 2 0 0 1 2 2v12l-3.5-2L12 19l-2.5-2L6 19V7a2 2 0 0 1 2-2Z"
+            stroke="currentColor"
+            strokeWidth="1.8"
+            strokeLinejoin="round"
+          />
+        </svg>
+      );
+    case "attempts":
+      return (
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden>
+          <rect x="5" y="4" width="14" height="16" rx="2" stroke="currentColor" strokeWidth="1.8" />
+          <path d="M9 9h6M9 13h6M9 17h4" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+        </svg>
+      );
+    case "correct":
+      return (
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden>
+          <circle cx="12" cy="12" r="9" stroke="currentColor" strokeWidth="1.8" />
+          <path d="M8 12.5 10.5 15 16 9.5" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+        </svg>
+      );
+    case "incorrect":
+      return (
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden>
+          <circle cx="12" cy="12" r="9" stroke="currentColor" strokeWidth="1.8" />
+          <path d="M9 9l6 6M15 9l-6 6" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+        </svg>
+      );
+    default:
+      return (
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden>
+          <path
+            d="M12 3a6 6 0 0 0-4 10v4h8v-4a6 6 0 0 0-4-10Z"
+            stroke="currentColor"
+            strokeWidth="1.8"
+            strokeLinejoin="round"
+          />
+          <path d="M10 21h4" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+        </svg>
+      );
+  }
+}
+
+function HomeworkTab({
+  assignments,
+  pending,
+  revokeTargetId,
+  expandedTaskId,
+  attempts,
+  taskContext,
+  onRevokeTarget,
+  onRevoke,
+  onLoadAttempts,
+  t,
+  tStudents,
+}: {
+  assignments: StudentTopicAssignmentSummary[];
+  pending: boolean;
+  revokeTargetId: string | null;
+  expandedTaskId: string | null;
+  attempts: TaskAttemptRecord[];
+  taskContext: TaskAttemptContext | null;
+  onRevokeTarget: (id: string | null) => void;
+  onRevoke: (id: string) => void;
+  onLoadAttempts: (roomTaskId: string) => void;
+  t: ReturnType<typeof useTranslations>;
+  tStudents: ReturnType<typeof useTranslations>;
+}) {
+  if (assignments.length === 0) {
+    return (
+      <p className="rounded-2xl border border-dashed border-[var(--card-border)] bg-[var(--background)] p-6 text-center text-sm text-[var(--muted)]">
+        {t("noAssignmentsYet")}
+      </p>
+    );
+  }
+
+  return (
+    <div className="space-y-4">
+      {assignments.map((assignment) => (
         <div
           key={assignment.id}
-          className="rounded-[1.25rem] border border-[var(--card-border)] bg-[var(--background)] p-4"
+          className="overflow-hidden rounded-2xl border border-[var(--card-border)] bg-[var(--background)]"
         >
-          <div className="flex flex-wrap items-start justify-between gap-2">
-            <div>
-              <p className="text-sm font-semibold text-[var(--foreground-strong)]">
-                {assignment.topicTitle}
-              </p>
+          <div className="flex flex-wrap items-start justify-between gap-3 border-b border-[var(--card-border)] bg-white px-4 py-4">
+            <div className="min-w-0">
+              <p className="font-semibold text-[var(--foreground-strong)]">{assignment.topicTitle}</p>
               <p className="mt-1 text-xs text-[var(--muted)]">
                 {t("progress", {
                   done: assignment.completedTasks,
@@ -240,13 +571,14 @@ export function StudentCardView({
                 })}
               </p>
             </div>
+            <ProgressBar done={assignment.completedTasks} total={assignment.totalTasks} />
             {revokeTargetId === assignment.id ? (
               <div className="flex shrink-0 flex-col items-end gap-1">
                 <p className="text-xs text-[var(--muted)]">{t("revokeConfirm")}</p>
                 <div className="flex gap-2">
                   <button
                     type="button"
-                    onClick={() => setRevokeTargetId(null)}
+                    onClick={() => onRevokeTarget(null)}
                     disabled={pending}
                     className="text-xs font-semibold text-[var(--muted)] hover:underline"
                   >
@@ -254,7 +586,7 @@ export function StudentCardView({
                   </button>
                   <button
                     type="button"
-                    onClick={() => handleRevoke(assignment.id)}
+                    onClick={() => onRevoke(assignment.id)}
                     disabled={pending}
                     className="text-xs font-semibold text-red-600 hover:underline"
                   >
@@ -265,49 +597,43 @@ export function StudentCardView({
             ) : (
               <button
                 type="button"
-                onClick={() => setRevokeTargetId(assignment.id)}
+                onClick={() => onRevokeTarget(assignment.id)}
                 disabled={pending}
-                className="text-xs font-semibold text-red-600 hover:underline"
+                className="shrink-0 rounded-full border border-red-200 bg-red-50 px-3 py-1.5 text-xs font-semibold text-red-600 hover:bg-red-100"
               >
                 {t("revoke")}
               </button>
             )}
           </div>
 
-          <ul className="mt-3 space-y-2">
+          <ul className="divide-y divide-[var(--card-border)]">
             {assignment.tasks.map((task) => (
-              <li
-                key={task.roomTaskId}
-                className="rounded-xl border border-[var(--card-border)] bg-white p-3"
-              >
+              <li key={task.roomTaskId} className="bg-white">
                 <button
                   type="button"
-                  onClick={() => loadAttempts(task.roomTaskId)}
-                  className="flex w-full items-center justify-between gap-2 text-left"
+                  onClick={() => onLoadAttempts(task.roomTaskId)}
+                  className="flex w-full items-center justify-between gap-3 px-4 py-3 text-left hover:bg-[var(--background)]"
                 >
                   <div className="min-w-0">
-                    <span className="block text-sm text-[var(--foreground-strong)]">
+                    <span className="block text-sm font-medium text-[var(--foreground-strong)]">
                       {task.title}
                     </span>
-                    <span className="mt-0.5 inline-block rounded-full bg-[var(--background)] px-2 py-0.5 text-[10px] font-semibold uppercase text-[var(--muted)]">
+                    <span className="mt-1 inline-block rounded-full bg-[var(--accent-soft)] px-2 py-0.5 text-[10px] font-semibold uppercase text-[var(--accent)]">
                       {answerTypeLabel(task.answerType)}
                     </span>
                   </div>
-                  <span className="shrink-0 text-right text-xs font-semibold text-[var(--muted)]">
-                    {task.progress ? statusLabel(task.progress.status, t) : t("statusPending")}
-                    {task.progress && task.progress.errorCount > 0
-                      ? ` (${task.progress.errorCount})`
-                      : null}
-                    <span className="mt-0.5 block text-[10px] font-normal normal-case">
-                      {expandedTaskId === task.roomTaskId ? "▲" : "▼"} {t("attempts")}
-                    </span>
-                  </span>
+                  <TaskStatusBadge
+                    status={task.progress?.status ?? "IN_PROGRESS"}
+                    errorCount={task.progress?.errorCount ?? 0}
+                    t={t}
+                    expanded={expandedTaskId === task.roomTaskId}
+                  />
                 </button>
 
                 {expandedTaskId === task.roomTaskId ? (
-                  <div className="mt-3 border-t border-[var(--card-border)] pt-3">
+                  <div className="border-t border-[var(--card-border)] bg-[var(--background)] px-4 py-4">
                     {taskContext?.correctAnswer ? (
-                      <p className="mb-2 text-xs text-[var(--muted)]">
+                      <p className="mb-3 text-xs text-[var(--muted)]">
                         {tStudents("correctAnswer")}:{" "}
                         <span className="font-semibold text-[var(--foreground-strong)]">
                           {taskContext.correctAnswer}
@@ -321,22 +647,34 @@ export function StudentCardView({
                         {attempts.map((attempt, index) => (
                           <li
                             key={attempt.id}
-                            className="rounded-lg bg-[var(--background)] p-3 text-xs"
+                            className="rounded-xl border border-[var(--card-border)] bg-white p-3 text-xs"
                           >
-                            <p className="font-semibold text-[var(--foreground-strong)]">
-                              {tStudents("attemptNumber", { n: index + 1 })}
-                            </p>
+                            <div className="flex flex-wrap items-center justify-between gap-2">
+                              <p className="font-semibold text-[var(--foreground-strong)]">
+                                {tStudents("attemptNumber", { n: index + 1 })}
+                              </p>
+                              <ResultBadge
+                                result={
+                                  attempt.isCorrect === true
+                                    ? "CORRECT"
+                                    : attempt.isCorrect === false
+                                      ? "INCORRECT"
+                                      : "SUBMITTED"
+                                }
+                                t={t}
+                              />
+                            </div>
                             <p className="mt-1 text-[var(--muted)]">
                               {new Date(attempt.createdAt).toLocaleString("ru-RU")}
-                              {attempt.usedHint ? ` · ${t("hintUsed")}` : null}
+                              {attempt.usedHint ? ` · ${t("hintUsed")}` : ""}
                             </p>
                             {attempt.answerText ? (
-                              <p className="mt-2 rounded-lg bg-white p-2 text-[var(--foreground-strong)]">
+                              <p className="mt-2 rounded-lg bg-[var(--background)] p-2 text-[var(--foreground-strong)]">
                                 {attempt.answerText}
                               </p>
                             ) : null}
                             {attempt.optionLabels.length > 0 ? (
-                              <p className="mt-2 rounded-lg bg-white p-2 text-[var(--foreground-strong)]">
+                              <p className="mt-2 rounded-lg bg-[var(--background)] p-2 text-[var(--foreground-strong)]">
                                 {attempt.optionLabels.join(", ")}
                               </p>
                             ) : null}
@@ -348,21 +686,6 @@ export function StudentCardView({
                                 className="mt-2 max-h-48 w-full rounded-lg object-contain"
                               />
                             ) : null}
-                            <p
-                              className={`mt-2 font-semibold ${
-                                attempt.isCorrect === true
-                                  ? "text-green-700"
-                                  : attempt.isCorrect === false
-                                    ? "text-red-600"
-                                    : "text-[var(--accent)]"
-                              }`}
-                            >
-                              {attempt.isCorrect === true
-                                ? t("statusCorrect")
-                                : attempt.isCorrect === false
-                                  ? t("incorrect")
-                                  : t("statusSubmitted")}
-                            </p>
                           </li>
                         ))}
                       </ul>
@@ -374,33 +697,245 @@ export function StudentCardView({
           </ul>
         </div>
       ))}
-
-      {error ? <p className="text-sm text-red-600">{error}</p> : null}
-
-      {!assignHandledExternally ? (
-        <AssignTopicModal
-          locale={locale}
-          roomId={activeRoomId}
-          studentId={studentId}
-          studentName={displayName}
-          open={assignOpen}
-          onClose={() => {
-            setAssignOpen(false);
-            onAssignOpenChange?.(false);
-            loadProgress();
-            router.refresh();
-          }}
-        />
-      ) : null}
     </div>
   );
 }
 
-function StatCard({ value, label }: { value: string; label: string }) {
+function TopicsTab({
+  assignments,
+  t,
+  tStudents,
+}: {
+  assignments: StudentTopicAssignmentSummary[];
+  t: ReturnType<typeof useTranslations>;
+  tStudents: ReturnType<typeof useTranslations>;
+}) {
+  if (assignments.length === 0) {
+    return (
+      <p className="rounded-2xl border border-dashed border-[var(--card-border)] bg-[var(--background)] p-6 text-center text-sm text-[var(--muted)]">
+        {tStudents("noTopicsYet")}
+      </p>
+    );
+  }
+
   return (
-    <div className="rounded-2xl bg-[var(--background)] p-3 text-center">
-      <p className="text-lg font-bold text-[var(--foreground-strong)]">{value}</p>
-      <p className="text-xs text-[var(--muted)]">{label}</p>
+    <div className="grid gap-4 sm:grid-cols-2">
+      {assignments.map((assignment) => {
+        const percent =
+          assignment.totalTasks > 0
+            ? Math.round((assignment.completedTasks / assignment.totalTasks) * 100)
+            : 0;
+
+        return (
+          <div
+            key={assignment.id}
+            className="rounded-2xl border border-[var(--card-border)] bg-[var(--background)] p-4"
+          >
+            <p className="font-semibold text-[var(--foreground-strong)]">{assignment.topicTitle}</p>
+            <div className="mt-3">
+              <div className="flex items-center justify-between text-xs text-[var(--muted)]">
+                <span>
+                  {t("progress", {
+                    done: assignment.completedTasks,
+                    total: assignment.totalTasks,
+                  })}
+                </span>
+                <span>{percent}%</span>
+              </div>
+              <div className="mt-2 h-2 overflow-hidden rounded-full bg-white">
+                <div
+                  className="h-full rounded-full bg-[var(--accent)] transition-all"
+                  style={{ width: `${percent}%` }}
+                />
+              </div>
+            </div>
+            <div className="mt-3 flex flex-wrap gap-2 text-xs">
+              {assignment.errorTasks > 0 ? (
+                <span className="rounded-full bg-red-50 px-2.5 py-1 font-semibold text-red-600">
+                  {assignment.errorTasks} {t("statsErrors").toLowerCase()}
+                </span>
+              ) : null}
+              {assignment.hintsUsed > 0 ? (
+                <span className="rounded-full bg-amber-50 px-2.5 py-1 font-semibold text-amber-700">
+                  {assignment.hintsUsed} {t("statsHints").toLowerCase()}
+                </span>
+              ) : null}
+              {assignment.completedTasks === assignment.totalTasks && assignment.totalTasks > 0 ? (
+                <span className="rounded-full bg-emerald-50 px-2.5 py-1 font-semibold text-emerald-700">
+                  {tStudents("topicDone")}
+                </span>
+              ) : null}
+            </div>
+          </div>
+        );
+      })}
     </div>
+  );
+}
+
+function HistoryTab({
+  history,
+  pending,
+  loaded,
+  t,
+  tStudents,
+}: {
+  history: StudentAnswerHistoryItem[];
+  pending: boolean;
+  loaded: boolean;
+  t: ReturnType<typeof useTranslations>;
+  tStudents: ReturnType<typeof useTranslations>;
+}) {
+  if (!loaded && pending) {
+    return <p className="text-sm text-[var(--muted)]">{tStudents("loadingHistory")}</p>;
+  }
+
+  if (history.length === 0) {
+    return (
+      <p className="rounded-2xl border border-dashed border-[var(--card-border)] bg-[var(--background)] p-6 text-center text-sm text-[var(--muted)]">
+        {tStudents("noHistory")}
+      </p>
+    );
+  }
+
+  return (
+    <div>
+      <p className="mb-4 flex items-center gap-2 text-sm font-semibold text-[var(--foreground-strong)]">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden>
+          <circle cx="12" cy="12" r="9" stroke="currentColor" strokeWidth="1.8" />
+          <path d="M12 7v5l3 2" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+        </svg>
+        {tStudents("historyTitle")}
+      </p>
+      <div className="overflow-x-auto rounded-2xl border border-[var(--card-border)]">
+        <table className="min-w-full text-left text-sm">
+          <thead className="bg-[var(--background)] text-xs font-semibold uppercase tracking-wide text-[var(--muted)]">
+            <tr>
+              <th className="px-4 py-3">{tStudents("colDate")}</th>
+              <th className="px-4 py-3">{tStudents("colTopic")}</th>
+              <th className="px-4 py-3">{tStudents("colTask")}</th>
+              <th className="px-4 py-3">{tStudents("colAnswer")}</th>
+              <th className="px-4 py-3">{tStudents("colResult")}</th>
+              <th className="hidden px-4 py-3 sm:table-cell">{tStudents("colAttempt")}</th>
+              <th className="hidden px-4 py-3 md:table-cell">{tStudents("colHints")}</th>
+              <th className="hidden px-4 py-3 lg:table-cell">{tStudents("colTime")}</th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-[var(--card-border)] bg-white">
+            {history.map((item) => (
+              <tr key={item.id} className="hover:bg-[var(--background)]/60">
+                <td className="whitespace-nowrap px-4 py-3 text-xs text-[var(--muted)]">
+                  {new Date(item.createdAt).toLocaleString("ru-RU", {
+                    day: "2-digit",
+                    month: "2-digit",
+                    year: "numeric",
+                    hour: "2-digit",
+                    minute: "2-digit",
+                  })}
+                </td>
+                <td className="max-w-[8rem] truncate px-4 py-3 text-[var(--foreground-strong)]">
+                  {item.topicTitle}
+                </td>
+                <td className="max-w-[8rem] truncate px-4 py-3 text-[var(--foreground-strong)]">
+                  {item.taskTitle}
+                </td>
+                <td className="max-w-[10rem] truncate px-4 py-3">
+                  {item.imageUrl ? (
+                    <span className="inline-flex items-center gap-1 text-[var(--accent)]">
+                      📷 {item.answerDisplay !== "📷" ? item.answerDisplay : tStudents("photoAnswer")}
+                    </span>
+                  ) : (
+                    item.answerDisplay
+                  )}
+                </td>
+                <td className="px-4 py-3">
+                  <ResultBadge result={item.result} t={t} />
+                </td>
+                <td className="hidden px-4 py-3 sm:table-cell">{item.attemptNumber}</td>
+                <td className="hidden px-4 py-3 md:table-cell">
+                  {item.usedHint ? t("hintUsed") : tStudents("no")}
+                </td>
+                <td className="hidden px-4 py-3 font-mono text-xs lg:table-cell">
+                  {formatDuration(item.durationSeconds)}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+}
+
+function ProgressBar({ done, total }: { done: number; total: number }) {
+  const percent = total > 0 ? Math.round((done / total) * 100) : 0;
+  return (
+    <div className="w-full min-w-[8rem] max-w-[10rem]">
+      <div className="flex items-center justify-between text-xs text-[var(--muted)]">
+        <span>{percent}%</span>
+      </div>
+      <div className="mt-1 h-2 overflow-hidden rounded-full bg-[var(--background)]">
+        <div
+          className="h-full rounded-full bg-[var(--accent)]"
+          style={{ width: `${percent}%` }}
+        />
+      </div>
+    </div>
+  );
+}
+
+function TaskStatusBadge({
+  status,
+  errorCount,
+  t,
+  expanded,
+}: {
+  status: string;
+  errorCount: number;
+  t: ReturnType<typeof useTranslations>;
+  expanded: boolean;
+}) {
+  const label = statusLabel(status, t);
+  const tone =
+    status === "CORRECT"
+      ? "bg-emerald-50 text-emerald-700"
+      : status === "SUBMITTED"
+        ? "bg-blue-50 text-blue-700"
+        : status === "SKIPPED"
+          ? "bg-gray-100 text-gray-600"
+          : errorCount > 0
+            ? "bg-red-50 text-red-600"
+            : "bg-amber-50 text-amber-700";
+
+  return (
+    <span className={`shrink-0 rounded-full px-3 py-1 text-xs font-semibold ${tone}`}>
+      {label}
+      {errorCount > 0 ? ` (${errorCount})` : null}
+      <span className="ml-1 opacity-60">{expanded ? "▲" : "▼"}</span>
+    </span>
+  );
+}
+
+function ResultBadge({
+  result,
+  t,
+}: {
+  result: "CORRECT" | "INCORRECT" | "SUBMITTED" | "SKIPPED";
+  t: ReturnType<typeof useTranslations>;
+}) {
+  const label = historyResultLabel(result, t);
+  const tone =
+    result === "CORRECT"
+      ? "bg-emerald-100 text-emerald-800"
+      : result === "INCORRECT"
+        ? "bg-red-100 text-red-800"
+        : result === "SKIPPED"
+          ? "bg-gray-100 text-gray-700"
+          : "bg-blue-100 text-blue-800";
+
+  return (
+    <span className={`inline-block rounded-full px-2.5 py-1 text-xs font-semibold ${tone}`}>
+      {label}
+    </span>
   );
 }

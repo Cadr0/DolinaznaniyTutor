@@ -31,10 +31,20 @@ export type StudentTopicAssignmentSummary = {
   tasks: AssignmentTaskItem[];
 };
 
+export type StudentExtendedStats = {
+  topicsCompleted: number;
+  totalAttempts: number;
+  correctAnswers: number;
+  incorrectAnswers: number;
+  hintsUsed: number;
+  accuracyPercent: number;
+};
+
 export type StudentProgressOverview = {
   studentId: string;
   studentName: string;
   studentEmail: string;
+  userHandle: string;
   assignments: StudentTopicAssignmentSummary[];
   totals: {
     assignedTasks: number;
@@ -42,6 +52,20 @@ export type StudentProgressOverview = {
     errorTasks: number;
     hintsUsed: number;
   };
+  extendedStats: StudentExtendedStats;
+};
+
+export type StudentAnswerHistoryItem = {
+  id: string;
+  createdAt: Date;
+  topicTitle: string;
+  taskTitle: string;
+  answerDisplay: string;
+  imageUrl: string | null;
+  result: "CORRECT" | "INCORRECT" | "SUBMITTED" | "SKIPPED";
+  attemptNumber: number;
+  usedHint: boolean;
+  durationSeconds: number | null;
 };
 
 export type TaskAttemptRecord = {
@@ -85,6 +109,115 @@ const COMPLETED_STATUSES: TaskProgressStatus[] = ["CORRECT", "SKIPPED", "SUBMITT
 
 function isCompleted(status: TaskProgressStatus) {
   return COMPLETED_STATUSES.includes(status);
+}
+
+function emailToHandle(email: string) {
+  const local = email.split("@")[0] ?? email;
+  return `@${local}`;
+}
+
+function formatAnswerDisplay(
+  attempt: {
+    answerText: string | null;
+    selectedOptionIds: string[];
+    imageUrl: string | null;
+  },
+  optionMap: Map<string, string>,
+) {
+  if (attempt.answerText?.trim()) {
+    return attempt.answerText.trim();
+  }
+  if (attempt.selectedOptionIds.length > 0) {
+    return attempt.selectedOptionIds.map((id) => optionMap.get(id) ?? id).join(", ");
+  }
+  if (attempt.imageUrl) {
+    return "📷";
+  }
+  return "—";
+}
+
+function attemptResult(
+  isCorrect: boolean | null,
+  progressStatus: TaskProgressStatus | null,
+): StudentAnswerHistoryItem["result"] {
+  if (isCorrect === true) {
+    return "CORRECT";
+  }
+  if (isCorrect === false) {
+    return progressStatus === "SKIPPED" ? "SKIPPED" : "INCORRECT";
+  }
+  return "SUBMITTED";
+}
+
+async function computeStudentRoomStats(
+  studentId: string,
+  roomId: string,
+  assignments: StudentTopicAssignmentSummary[],
+): Promise<StudentExtendedStats> {
+  const topicsCompleted = assignments.filter(
+    (assignment) => assignment.totalTasks > 0 && assignment.completedTasks === assignment.totalTasks,
+  ).length;
+
+  const roomTasks = await prisma.roomTask.findMany({
+    where: { roomTopic: { roomId } },
+    select: { id: true },
+  });
+  const taskIds = roomTasks.map((task) => task.id);
+
+  if (taskIds.length === 0) {
+    const hintsUsed = assignments.reduce((sum, assignment) => sum + assignment.hintsUsed, 0);
+    return {
+      topicsCompleted,
+      totalAttempts: 0,
+      correctAnswers: 0,
+      incorrectAnswers: 0,
+      hintsUsed,
+      accuracyPercent: 0,
+    };
+  }
+
+  const progressRows = await prisma.studentTaskProgress.findMany({
+    where: { studentId, roomTaskId: { in: taskIds } },
+    include: { attempts: true },
+  });
+
+  let totalAttempts = 0;
+  let correctAnswers = 0;
+  let incorrectAnswers = 0;
+  let hintsFromAttempts = 0;
+
+  for (const progress of progressRows) {
+    for (const attempt of progress.attempts) {
+      totalAttempts += 1;
+      if (attempt.isCorrect === true) {
+        correctAnswers += 1;
+      } else if (attempt.isCorrect === false) {
+        incorrectAnswers += 1;
+      }
+      if (attempt.usedHint) {
+        hintsFromAttempts += 1;
+      }
+    }
+  }
+
+  const hintsFromTasks = progressRows.filter((row) => row.hintUsedAt).length;
+  const hintsUsed = Math.max(
+    assignments.reduce((sum, assignment) => sum + assignment.hintsUsed, 0),
+    hintsFromTasks,
+    hintsFromAttempts,
+  );
+
+  const graded = correctAnswers + incorrectAnswers;
+  const accuracyPercent = graded > 0 ? Math.round((correctAnswers / graded) * 1000) / 10 : 0;
+
+  return {
+    topicsCompleted,
+    totalAttempts,
+    correctAnswers,
+    incorrectAnswers,
+    hintsUsed,
+    accuracyPercent,
+  };
 }
 
 export async function assignTopicToStudent(
@@ -418,13 +551,103 @@ export async function getStudentProgressForTutor(
     { assignedTasks: 0, completedTasks: 0, errorTasks: 0, hintsUsed: 0 },
   );
 
+  const extendedStats = await computeStudentRoomStats(studentId, roomId, roomAssignments);
+
   return {
     studentId: member.user.id,
     studentName: member.user.profile?.displayName ?? member.user.name,
     studentEmail: member.user.email,
+    userHandle: emailToHandle(member.user.email),
     assignments: roomAssignments,
     totals,
+    extendedStats,
   };
+}
+
+export async function getStudentAnswerHistoryForTutor(
+  tutorId: string,
+  roomId: string,
+  studentId: string,
+  limit = 1000,
+): Promise<StudentAnswerHistoryItem[]> {
+  const room = await prisma.room.findFirst({
+    where: { id: roomId, ownerId: tutorId },
+  });
+
+  if (!room) {
+    throw new Error("Нет доступа");
+  }
+
+  const roomTasks = await prisma.roomTask.findMany({
+    where: { roomTopic: { roomId } },
+    select: {
+      id: true,
+      title: true,
+      roomTopic: { select: { title: true } },
+      choiceOptions: { select: { id: true, text: true } },
+    },
+  });
+
+  if (roomTasks.length === 0) {
+    return [];
+  }
+
+  const taskMap = new Map(
+    roomTasks.map((task) => [
+      task.id,
+      {
+        title: task.title,
+        topicTitle: task.roomTopic.title,
+        optionMap: new Map(task.choiceOptions.map((option) => [option.id, option.text])),
+      },
+    ]),
+  );
+
+  const progressRows = await prisma.studentTaskProgress.findMany({
+    where: {
+      studentId,
+      roomTaskId: { in: roomTasks.map((task) => task.id) },
+    },
+    include: {
+      attempts: { orderBy: { createdAt: "asc" } },
+    },
+  });
+
+  const items: StudentAnswerHistoryItem[] = [];
+
+  for (const progress of progressRows) {
+    const task = taskMap.get(progress.roomTaskId);
+    if (!task) {
+      continue;
+    }
+
+    progress.attempts.forEach((attempt, index) => {
+      const previous = index > 0 ? progress.attempts[index - 1] : null;
+      const durationSeconds = previous
+        ? Math.max(
+            0,
+            Math.round((attempt.createdAt.getTime() - previous.createdAt.getTime()) / 1000),
+          )
+        : null;
+
+      items.push({
+        id: attempt.id,
+        createdAt: attempt.createdAt,
+        topicTitle: task.topicTitle,
+        taskTitle: task.title,
+        answerDisplay: formatAnswerDisplay(attempt, task.optionMap),
+        imageUrl: attempt.imageUrl,
+        result: attemptResult(attempt.isCorrect, progress.status),
+        attemptNumber: index + 1,
+        usedHint: attempt.usedHint,
+        durationSeconds,
+      });
+    });
+  }
+
+  return items
+    .sort((left, right) => right.createdAt.getTime() - left.createdAt.getTime())
+    .slice(0, limit);
 }
 
 export async function getAssignmentById(assignmentId: string, studentId: string) {

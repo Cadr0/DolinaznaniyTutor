@@ -15,6 +15,7 @@ import {
   getNextTaskInAssignment,
   getStudentAssignments,
   getStudentProgressForTutor,
+  getStudentAnswerHistoryForTutor,
   getTaskAttemptsForTutor,
   getTaskAttemptContextForTutor,
   revokeStudentAssignment,
@@ -89,6 +90,16 @@ export async function fetchStudentProgressAction(
 ) {
   const session = await requireTutor(locale);
   return getStudentProgressForTutor(session.user.id, roomId, studentId);
+}
+
+export async function fetchStudentAnswerHistoryAction(
+  locale: string,
+  roomId: string,
+  studentId: string,
+) {
+  const session = await requireTutor(locale);
+  await assertTutorRoomAccess(session.user.id, roomId);
+  return getStudentAnswerHistoryForTutor(session.user.id, roomId, studentId);
 }
 
 export async function fetchTaskAttemptsAction(
