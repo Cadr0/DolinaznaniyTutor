@@ -69,8 +69,8 @@ function formatDuration(seconds: number | null) {
   return `${String(mins).padStart(2, "0")}:${String(secs).padStart(2, "0")}`;
 }
 
-function formatHistoryDate(iso: string, compact = false) {
-  const date = new Date(iso);
+function formatHistoryDate(iso: string | Date, compact = false) {
+  const date = iso instanceof Date ? iso : new Date(iso);
   if (compact) {
     const day = String(date.getDate()).padStart(2, "0");
     const month = String(date.getMonth() + 1).padStart(2, "0");
@@ -964,7 +964,11 @@ function HistoryTab({
             >
               <div className="flex items-start justify-between gap-2">
                 <time
-                  dateTime={item.createdAt}
+                  dateTime={
+                    typeof item.createdAt === "string"
+                      ? item.createdAt
+                      : item.createdAt.toISOString()
+                  }
                   className="shrink-0 text-[10px] font-medium tabular-nums text-[var(--muted)]"
                 >
                   {formatHistoryDate(item.createdAt, true)}
