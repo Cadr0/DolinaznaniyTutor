@@ -82,7 +82,9 @@ export function TaskProgressDots({
               aria-label={t("taskNavItem", { n: index + 1, title: task.title })}
               aria-current={isCurrent ? "step" : undefined}
               className={`flex shrink-0 rounded-full transition-colors ${
-                isCurrent ? currentDotClass : toneClass[tone]
+                isCurrent
+                  ? currentDotClass
+                  : toneClass[tone as Exclude<DotTone, "current">]
               }`}
             />
           );

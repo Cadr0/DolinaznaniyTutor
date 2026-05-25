@@ -8,6 +8,7 @@ import {
 } from "@/app/[locale]/(app)/dashboard/homework/actions";
 import { Button } from "@/components/ui/Button";
 import type { StudentTopicAssignmentSummary } from "@/lib/student-assignments";
+import type { TaskAnswerType } from "@prisma/client";
 import { answerTypeShortLabel } from "@/lib/task-labels";
 
 type RoomTopicForAssign = Awaited<ReturnType<typeof getRoomTopicsForAssignAction>>[number];
@@ -221,9 +222,7 @@ export function AssignHomeworkPanel({
                       const assignedTask = assignment?.tasks.find(
                         (item) => item.roomTaskId === task.id,
                       );
-                      const inProgress =
-                        assignedTask?.progress &&
-                        assignedTask.progress.status === "IN_PROGRESS";
+                      const inProgress = assignedTask?.progress?.status === "IN_PROGRESS";
 
                       return (
                         <li key={task.id}>
@@ -246,7 +245,7 @@ export function AssignHomeworkPanel({
                                   {task.title}
                                 </span>
                                 <span className="mt-1 inline-block text-xs text-[var(--muted)]">
-                                  {answerTypeShortLabel[task.answerType]}
+                                  {answerTypeShortLabel[task.answerType as TaskAnswerType]}
                                 </span>
                               </span>
                             </div>
